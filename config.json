@@ -1,0 +1,14 @@
+{
+  "EnableLogging": false,
+  "LogFile": "C:\\Logs\\HP-HotkeyHandler.log",
+  "Hotkeys": [
+    {
+      "Name": "F11 Key",
+      "EventID": 29,
+      "EventData": 8616,
+      "ActionType": "LaunchApplication",
+      "ActionValue": "notepad.exe",
+      "Description": "Launch Notepad (replace with your preferred app)"
+    }
+  ]
+}
