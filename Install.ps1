@@ -28,15 +28,7 @@ if (-not (Test-Path $configFile)) {
     exit 1
 }
 
-# Create log directory, uncomment if needed
-<#
-$config = Get-Content $configFile | ConvertFrom-Json
-$logDir = Split-Path $config.LogFile -Parent
-if (-not (Test-Path $logDir)) {
-    New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-    Write-Host "[OK] Created log directory: $logDir" -ForegroundColor Green
-}
-#>
+Write-Host "[OK] Found required files" -ForegroundColor Green
 
 # Create scheduled task
 $taskName = "HP-WMI-Hotkey-Handler"
@@ -84,3 +76,4 @@ Write-Host "To start it now, run: Start-ScheduledTask -TaskName '$taskName'" -Fo
 Write-Host ""
 Write-Host "Configuration file: $configFile" -ForegroundColor Yellow
 Write-Host "Edit this file to customize your hotkey actions." -ForegroundColor Yellow
+Write-Host ""
