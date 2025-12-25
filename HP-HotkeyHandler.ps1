@@ -3,7 +3,6 @@
     HP WMI Hotkey Handler - Custom handler for HP special function keys
 .DESCRIPTION
     Monitors HP WMI events (hpqBEvnt) and triggers custom actions for special keyboard keys.
-    Designed for HP laptops with special function keys that don't generate standard scancodes.
 .NOTES
     Author: Shapes0
     Repository: https://github.com/Shapes0/myhp-button-remap
@@ -41,6 +40,13 @@ foreach ($hotkey in $config.Hotkeys) {
     $eventData = $hotkey.EventData
     $sourceId = "HPHotkey_$eventId"
     
+    # Capture these values in local scope before the action block
+    $actionType = $hotkey.ActionType
+    $actionValue = $hotkey.ActionValue
+    $hotkeyName = $hotkey.Name
+    $logFile = $config.LogFile
+    $enableLogging = $config.EnableLogging
+    
     try {
         # Build WQL query
         $query = "SELECT * FROM hpqBEvnt WHERE EventID = $eventId"
@@ -50,42 +56,61 @@ foreach ($hotkey in $config.Hotkeys) {
         
         Register-WmiEvent -Namespace "root\wmi" -Query $query -SourceIdentifier $sourceId -Action {
             $eventInfo = $Event.SourceEventArgs.NewEvent
-            $hotkeyConfig = $using:hotkey
             
-            # Log the event
+            # Use the captured variables with $using: modifier
             $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-            $logMsg = "[$timestamp] [EVENT] Hotkey triggered - EventID: $($eventInfo.EventID), EventData: $($eventInfo.EventData)"
+            $logMsg = "[$timestamp] [EVENT] $($using:hotkeyName) triggered - EventID: $($eventInfo.EventID), EventData: $($eventInfo.EventData)"
             
-            if ($using:config.EnableLogging) {
-                Add-Content -Path $using:config.LogFile -Value $logMsg
+            # Log if enabled
+            if ($using:enableLogging) {
+                try {
+                    Add-Content -Path $using:logFile -Value $logMsg -ErrorAction SilentlyContinue
+                } catch {}
             }
             
             # Execute the configured action
-            switch ($hotkeyConfig.ActionType) {
-                "LaunchApplication" {
-                    Start-Process $hotkeyConfig.ActionValue -ErrorAction SilentlyContinue
+            try {
+                switch ($using:actionType) {
+                    "LaunchApplication" {
+                        Start-Process $using:actionValue -ErrorAction Stop
+                    }
+                    "RunCommand" {
+                        Invoke-Expression $using:actionValue -ErrorAction Stop
+                    }
+                    "OpenURL" {
+                        Start-Process $using:actionValue -ErrorAction Stop
+                    }
                 }
-                "RunCommand" {
-                    Invoke-Expression $hotkeyConfig.ActionValue -ErrorAction SilentlyContinue
-                }
-                "OpenURL" {
-                    Start-Process $hotkeyConfig.ActionValue -ErrorAction SilentlyContinue
+            } catch {
+                $errorMsg = "[$timestamp] [ERROR] Failed to execute action: $_"
+                if ($using:enableLogging) {
+                    Add-Content -Path $using:logFile -Value $errorMsg -ErrorAction SilentlyContinue
                 }
             }
         }
         
-        Write-Log "Registered handler for EventID $eventId (EventData: $eventData) - Action: $($hotkey.ActionType)"
+        Write-Log "Registered handler for $($hotkey.Name) - EventID: $eventId (EventData: $eventData) - Action: $actionType"
     } catch {
         Write-Log "Failed to register handler for EventID $eventId : $_" "ERROR"
     }
 }
 
 Write-Log "HP Hotkey Handler is now active. Press Ctrl+C to stop."
+Write-Host ""
+Write-Host "Registered handlers:" -ForegroundColor Cyan
+Get-EventSubscriber | Where-Object { $_.SourceIdentifier -like "HPHotkey_*" } | ForEach-Object {
+    Write-Host "  - $($_.SourceIdentifier)" -ForegroundColor Green
+}
+Write-Host ""
 
-# Keep the script running
+# Keep the script running and process events in real-time
 try {
     while ($true) { 
-        Start-Sleep -Seconds 60
+        # Wait-Event processes queued events immediately
+        Wait-Event -Timeout 1 | Out-Null
+        
+        # Clear processed events from queue
+        Get-Event | Remove-Event
     }
 } finally {
     Write-Log "HP Hotkey Handler stopping..."
