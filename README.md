@@ -2,7 +2,7 @@
 
 Remap F11 key MyHP/HP System Event Utility button
 
-After some back and forth with Claude I was able to figure this out. This is a rudimentary script, use at your own risk.
+After some back and forth with Claude I was able to figure this out. This is a rudimentary script, use at your own risk. Tested on an HP OmniBook, YMMV on other models.
 
 Custom handler for HP laptop special function keys that don't generate standard keyboard scancodes.
 
