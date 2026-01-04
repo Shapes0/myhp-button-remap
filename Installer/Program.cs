@@ -221,7 +221,7 @@ public class InstallerForm : Form
     private void ExtractResource(string resourceName, string destinationPath)
     {
         var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-        var resourcePath = $"HPButtonRemapInstaller.Resources.{resourceName}";
+        var resourcePath = $"Installer.Resources.{resourceName}";
         
         using var stream = assembly.GetManifestResourceStream(resourcePath);
         if (stream == null)
@@ -238,7 +238,7 @@ public class InstallerForm : Form
     private void ExtractAllResources(string prefix, string targetDirectory)
     {
         var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-        var resourcePrefix = $"HPButtonRemapInstaller.Resources.{prefix}.";
+        var resourcePrefix = $"Installer.Resources.{prefix}.";
         
         foreach (var resourceName in assembly.GetManifestResourceNames())
         {
