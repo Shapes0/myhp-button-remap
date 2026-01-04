@@ -68,3 +68,4 @@ ServiceFabricBackup/
 
 # VS Code
 .vscode/
+publish/
