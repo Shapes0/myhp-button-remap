@@ -125,26 +125,9 @@ class Program
         };
 
         var json = JsonConvert.SerializeObject(sampleConfig, Formatting.Indented);
-        
-        // Add helpful comments about other action types
-        json += @"
-
-// To use different action types, change the ""Type"" field and corresponding properties:
-//
-// Launch an app with parameters:
-// ""Type"": ""LaunchApp"",
-// ""LaunchPath"": ""C:\\Program Files\\MyApp\\app.exe"",
-// ""LaunchArguments"": ""--some-flag""
-//
-// Open a website:
-// ""Type"": ""OpenWebsite"",
-// ""WebsiteUrl"": ""https://www.google.com""
-//
-// Send a keyboard shortcut:
-// ""Type"": ""SendKeys"",
-// ""KeyCombo"": ""Ctrl+Shift+T""
-";
-        
         File.WriteAllText(ConfigPath, json);
+        
+        Console.WriteLine();
+        Console.WriteLine("Sample configuration created. See CONFIG-EXAMPLES.md for more examples.");
     }
 }

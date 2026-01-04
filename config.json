@@ -10,18 +10,3 @@
     }
   ]
 }
-
-// To use different action types, change the "Type" field and corresponding properties:
-//
-// Launch an app with parameters:
-// "Type": "LaunchApp",
-// "LaunchPath": "C:\\Program Files\\MyApp\\app.exe",
-// "LaunchArguments": "--some-flag"
-//
-// Open a website:
-// "Type": "OpenWebsite",
-// "WebsiteUrl": "https://www.google.com"
-//
-// Send a keyboard shortcut:
-// "Type": "SendKeys",
-// "KeyCombo": "Ctrl+Shift+T"
