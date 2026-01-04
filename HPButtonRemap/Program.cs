@@ -1,75 +1,105 @@
 ﻿using HPButtonRemap;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
-var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddWindowsService(options =>
+namespace HPButtonRemap;
+
+static class Program
 {
-    options.ServiceName = "HP Button Remap Service";
-});
+    [STAThread]
+    static void Main()
+    {
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+        Application.Run(new TrayApplicationContext());
+    }
+}
 
-builder.Services.AddHostedService<HPButtonRemapService>();
-builder.Services.AddSingleton<ActionExecutor>();
-
-var host = builder.Build();
-await host.RunAsync();
-
-public class HPButtonRemapService : BackgroundService
+public class TrayApplicationContext : ApplicationContext
 {
-    private readonly ILogger<HPButtonRemapService> _logger;
-    private readonly ActionExecutor _executor;
+    private NotifyIcon _trayIcon;
     private WmiEventMonitor? _monitor;
+    private ActionExecutor _executor;
     private static readonly string ConfigPath = Path.Combine(
         AppDomain.CurrentDomain.BaseDirectory,
         "config.json"
     );
 
-    public HPButtonRemapService(ILogger<HPButtonRemapService> logger, ActionExecutor executor)
+    public TrayApplicationContext()
     {
-        _logger = logger;
-        _executor = executor;
+        _executor = new ActionExecutor();
+        
+        // Create tray icon
+        _trayIcon = new NotifyIcon()
+        {
+            Icon = SystemIcons.Application,
+            ContextMenuStrip = CreateContextMenu(),
+            Visible = true,
+            Text = "HP Button Remap"
+        };
+
+        // Load config and start monitoring
+        StartMonitoring();
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    private ContextMenuStrip CreateContextMenu()
+    {
+        var menu = new ContextMenuStrip();
+        
+        var openConfigItem = new ToolStripMenuItem("Open Configuration");
+        openConfigItem.Click += (s, e) => OpenConfiguration();
+        menu.Items.Add(openConfigItem);
+
+        var openConfiguratorItem = new ToolStripMenuItem("Open Configurator");
+        openConfiguratorItem.Click += (s, e) => OpenConfigurator();
+        menu.Items.Add(openConfiguratorItem);
+
+        menu.Items.Add(new ToolStripSeparator());
+
+        var reloadItem = new ToolStripMenuItem("Reload Configuration");
+        reloadItem.Click += (s, e) => ReloadConfiguration();
+        menu.Items.Add(reloadItem);
+
+        menu.Items.Add(new ToolStripSeparator());
+
+        var aboutItem = new ToolStripMenuItem("About");
+        aboutItem.Click += (s, e) => ShowAbout();
+        menu.Items.Add(aboutItem);
+
+        var exitItem = new ToolStripMenuItem("Exit");
+        exitItem.Click += (s, e) => Exit();
+        menu.Items.Add(exitItem);
+
+        return menu;
+    }
+
+    private void StartMonitoring()
     {
         try
         {
-            _logger.LogInformation("HP Button Remap Service starting...");
-
-            // Load configuration
             var config = LoadConfiguration();
             if (config == null || config.ButtonActions.Count == 0)
             {
-                _logger.LogError("No valid button actions configured");
+                _trayIcon.ShowBalloonTip(5000, "HP Button Remap", 
+                    "No valid button actions configured. Please configure using the configurator.", 
+                    ToolTipIcon.Warning);
                 return;
             }
 
-            // Start monitoring
-            _monitor = new WmiEventMonitor(_executor, _logger);
+            _monitor?.Dispose();
+            _monitor = new WmiEventMonitor(_executor);
             _monitor.StartMonitoring(config);
 
-            _logger.LogInformation("HP Button Remap Service is running");
-
-            // Keep service running until cancellation
-            await Task.Delay(Timeout.Infinite, stoppingToken);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Service is stopping...");
+            _trayIcon.ShowBalloonTip(2000, "HP Button Remap", 
+                $"Monitoring {config.ButtonActions.Count} button action(s)", 
+                ToolTipIcon.Info);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Fatal error in service");
-            throw;
+            MessageBox.Show($"Error starting monitoring: {ex.Message}", 
+                "HP Button Remap Error", 
+                MessageBoxButtons.OK, 
+                MessageBoxIcon.Error);
         }
-    }
-
-    public override Task StopAsync(CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("HP Button Remap Service stopping...");
-        _monitor?.Dispose();
-        return base.StopAsync(cancellationToken);
     }
 
     private Config? LoadConfiguration()
@@ -78,26 +108,20 @@ public class HPButtonRemapService : BackgroundService
         {
             if (!File.Exists(ConfigPath))
             {
-                _logger.LogError("Configuration file not found: {ConfigPath}", ConfigPath);
                 CreateSampleConfig();
-                return null;
+                return LoadConfiguration();
             }
 
             var json = File.ReadAllText(ConfigPath);
             var config = Newtonsoft.Json.JsonConvert.DeserializeObject<Config>(json);
-
-            if (config == null)
-            {
-                _logger.LogError("Failed to parse configuration file");
-                return null;
-            }
-
-            _logger.LogInformation("Configuration loaded: {Count} action(s)", config.ButtonActions.Count);
             return config;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load configuration");
+            MessageBox.Show($"Error loading configuration: {ex.Message}", 
+                "HP Button Remap Error", 
+                MessageBoxButtons.OK, 
+                MessageBoxIcon.Error);
             return null;
         }
     }
@@ -122,6 +146,92 @@ public class HPButtonRemapService : BackgroundService
 
         var json = Newtonsoft.Json.JsonConvert.SerializeObject(sampleConfig, Newtonsoft.Json.Formatting.Indented);
         File.WriteAllText(ConfigPath, json);
-        _logger.LogInformation("Sample configuration created at: {ConfigPath}", ConfigPath);
+    }
+
+    private void OpenConfiguration()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = ConfigPath,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error opening configuration: {ex.Message}", 
+                "HP Button Remap Error", 
+                MessageBoxButtons.OK, 
+                MessageBoxIcon.Error);
+        }
+    }
+
+    private void OpenConfigurator()
+    {
+        try
+        {
+            var configuratorPath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "HPButtonRemapConfig.exe"
+            );
+
+            if (File.Exists(configuratorPath))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = configuratorPath,
+                    UseShellExecute = true
+                });
+            }
+            else
+            {
+                MessageBox.Show("Configurator not found. Please use 'Open Configuration' to edit manually.", 
+                    "HP Button Remap", 
+                    MessageBoxButtons.OK, 
+                    ToolTipIcon.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error opening configurator: {ex.Message}", 
+                "HP Button Remap Error", 
+                MessageBoxButtons.OK, 
+                MessageBoxIcon.Error);
+        }
+    }
+
+    private void ReloadConfiguration()
+    {
+        StartMonitoring();
+    }
+
+    private void ShowAbout()
+    {
+        MessageBox.Show(
+            "HP Button Remap\n\n" +
+            "Monitors HP laptop special function keys and executes configured actions.\n\n" +
+            "Configuration: " + ConfigPath + "\n\n" +
+            "Right-click the tray icon to access options.",
+            "About HP Button Remap",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
+    }
+
+    private void Exit()
+    {
+        _monitor?.Dispose();
+        _trayIcon.Visible = false;
+        Application.Exit();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _monitor?.Dispose();
+            _trayIcon?.Dispose();
+        }
+        base.Dispose(disposing);
     }
 }

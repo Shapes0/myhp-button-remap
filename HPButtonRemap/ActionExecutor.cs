@@ -18,120 +18,85 @@ public class ActionExecutor
     /// <summary>
     /// Execute an action based on its configuration
     /// </summary>
-    public void ExecuteAction(ButtonAction action, Microsoft.Extensions.Logging.ILogger logger)
+    public void ExecuteAction(ButtonAction action)
     {
         try
         {
-            logger.LogInformation("Executing action: {ActionName} (Type: {ActionType})", action.Name, action.Type);
+            Debug.WriteLine($"Executing action: {action.Name} (Type: {action.Type})");
             
             switch (action.Type)
             {
                 case ActionType.LaunchApp:
-                    LaunchApplication(action, logger);
+                    LaunchApplication(action);
                     break;
                 case ActionType.OpenWebsite:
-                    OpenWebsite(action, logger);
+                    OpenWebsite(action);
                     break;
                 case ActionType.SendKeys:
-                    SendKeyCombo(action, logger);
+                    SendKeyCombo(action);
                     break;
                 default:
-                    logger.LogError("Unknown action type: {ActionType}", action.Type);
+                    Debug.WriteLine($"Unknown action type: {action.Type}");
                     break;
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to execute action '{ActionName}'", action.Name);
+            Debug.WriteLine($"Failed to execute action '{action.Name}': {ex.Message}");
         }
     }
 
     /// <summary>
     /// Launch an application with optional arguments
     /// </summary>
-    private void LaunchApplication(ButtonAction action, Microsoft.Extensions.Logging.ILogger logger)
+    private void LaunchApplication(ButtonAction action)
     {
         if (string.IsNullOrEmpty(action.LaunchPath))
         {
-            logger.LogError("LaunchPath is not specified");
+            Debug.WriteLine("LaunchPath is not specified");
             return;
         }
 
-        // If running as a service (Session 0), use special launcher to launch in user session
-        if (UserSessionLauncher.IsRunningAsService())
+        var startInfo = new ProcessStartInfo
         {
-            logger.LogInformation("Running as service, launching in user session...");
-            if (UserSessionLauncher.LaunchProcessInUserSession(action.LaunchPath, action.LaunchArguments ?? string.Empty, out string error))
-            {
-                logger.LogInformation("Launched in user session: {LaunchPath} {LaunchArguments}", action.LaunchPath, action.LaunchArguments);
-            }
-            else
-            {
-                logger.LogError("Failed to launch in user session: {Error}", error);
-            }
-        }
-        else
-        {
-            // Normal launch when running in user context
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = action.LaunchPath,
-                Arguments = action.LaunchArguments ?? string.Empty,
-                UseShellExecute = true
-            };
+            FileName = action.LaunchPath,
+            Arguments = action.LaunchArguments ?? string.Empty,
+            UseShellExecute = true
+        };
 
-            Process.Start(startInfo);
-            logger.LogInformation("Launched: {LaunchPath} {LaunchArguments}", action.LaunchPath, action.LaunchArguments);
-        }
+        Process.Start(startInfo);
+        Debug.WriteLine($"Launched: {action.LaunchPath} {action.LaunchArguments}");
     }
 
     /// <summary>
     /// Open a website in the default browser
     /// </summary>
-    private void OpenWebsite(ButtonAction action, Microsoft.Extensions.Logging.ILogger logger)
+    private void OpenWebsite(ButtonAction action)
     {
         if (string.IsNullOrEmpty(action.WebsiteUrl))
         {
-            logger.LogError("WebsiteUrl is not specified");
+            Debug.WriteLine("WebsiteUrl is not specified");
             return;
         }
 
-        // If running as a service (Session 0), use special launcher to launch in user session
-        if (UserSessionLauncher.IsRunningAsService())
+        var startInfo = new ProcessStartInfo
         {
-            logger.LogInformation("Running as service, launching browser in user session...");
-            // Use cmd /c start to open URL with default browser
-            if (UserSessionLauncher.LaunchProcessInUserSession("cmd.exe", $"/c start \"\" \"{action.WebsiteUrl}\"", out string error))
-            {
-                logger.LogInformation("Opened website in user session: {WebsiteUrl}", action.WebsiteUrl);
-            }
-            else
-            {
-                logger.LogError("Failed to open website in user session: {Error}", error);
-            }
-        }
-        else
-        {
-            // Normal launch when running in user context
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = action.WebsiteUrl,
-                UseShellExecute = true
-            };
+            FileName = action.WebsiteUrl,
+            UseShellExecute = true
+        };
 
-            Process.Start(startInfo);
-            logger.LogInformation("Opened website: {WebsiteUrl}", action.WebsiteUrl);
-        }
+        Process.Start(startInfo);
+        Debug.WriteLine($"Opened website: {action.WebsiteUrl}");
     }
 
     /// <summary>
     /// Send keyboard shortcut (e.g., "Ctrl+Shift+T")
     /// </summary>
-    private void SendKeyCombo(ButtonAction action, Microsoft.Extensions.Logging.ILogger logger)
+    private void SendKeyCombo(ButtonAction action)
     {
         if (string.IsNullOrEmpty(action.KeyCombo))
         {
-            logger.LogError("KeyCombo is not specified");
+            Debug.WriteLine("KeyCombo is not specified");
             return;
         }
 
@@ -146,7 +111,7 @@ public class ActionExecutor
             }
             else
             {
-                logger.LogError("Unknown key: {Key}", key);
+                Debug.WriteLine($"Unknown key: {key}");
                 return;
             }
         }
@@ -163,7 +128,7 @@ public class ActionExecutor
             keybd_event(virtualKeys[i], 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, UIntPtr.Zero);
         }
 
-        logger.LogInformation("Sent key combo: {KeyCombo}", action.KeyCombo);
+        Debug.WriteLine($"Sent key combo: {action.KeyCombo}");
     }
 
     /// <summary>

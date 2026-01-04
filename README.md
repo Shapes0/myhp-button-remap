@@ -1,23 +1,22 @@
 # HP Button Remap
 
-Windows Service with GUI Configurator for remapping HP laptop special function keys.
+Lightweight tray application for remapping HP laptop special function keys.
 
 ## Overview
 
-This is a **Windows Service** with a **GUI configurator** that monitors HP WMI events and allows you to configure custom actions when special HP laptop buttons are pressed. The service runs as LocalSystem but uses Windows APIs to launch applications in your user session, providing a seamless experience without credential configuration.
+This is a **Windows tray application** that monitors HP WMI events and allows you to configure custom actions when special HP laptop buttons are pressed. The application runs in your user session with a system tray icon.
 
 ## Key Features
 
-- ✅ **Windows Service** - Runs automatically, no credential setup needed
-- ✅ **Launches in your session** - Uses Windows APIs to launch apps in the active user session
-- ✅ **GUI Configurator** - Easy-to-use interface accessible from Start Menu
-- ✅ **No manual config editing** - Configure everything through the GUI
+- ✅ **Simple tray application** - Runs in your system tray
+- ✅ **No administrator required** - Installs to your user account
+- ✅ **GUI Configurator** - Easy-to-use interface for configuration
 - ✅ **Multiple action types:**
   - Launch Application (with parameters)
   - Open Website
   - Send Keyboard Shortcuts
-- ✅ **Simple installation** - Run one PowerShell script as admin
-- ✅ **Reliable** - Service auto-starts and recovers from crashes
+- ✅ **Auto-start** - Automatically starts when you log in
+- ✅ **Lightweight** - Minimal resource usage
 
 ## Problem
 
@@ -25,72 +24,59 @@ HP laptops have special function keys (like F11 with custom icons) that trigger 
 
 ## Solution
 
-This Windows Service monitors HP's WMI events (`hpqBEvnt`) and executes configured actions. Configure it easily through the GUI app in your Start Menu.
+This lightweight tray application monitors HP's WMI events (`hpqBEvnt`) and executes configured actions. Configure it easily through the GUI or by right-clicking the tray icon.
 
 ## Requirements
 
 - Windows 10/11
 - HP laptop with special function keys
-- Administrator privileges (for initial installation only)
 - No .NET runtime needed (self-contained executable)
 
 ## Installation
 
 1. **Download** the latest release from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
-2. **Extract** the ZIP file to a temporary folder
+2. **Extract** the ZIP file to a folder
 3. **Right-click** `Install.ps1` and select **"Run with PowerShell"**
-4. **Accept** the UAC prompt (administrator required)
-5. **Done!** The service is now running
+4. **Done!** The tray icon should appear in your system tray
 
 The installer will:
-- Install the service to `C:\Program Files\HPButtonRemap\`
-- Start the service as LocalSystem (no credential configuration needed)
+- Install the application to `%LOCALAPPDATA%\HPButtonRemap\`
+- Add a shortcut to your Startup folder (auto-start on login)
 - Add "HP Button Remap Configurator" to your Start Menu
-
-**How it works:** The service runs in Session 0 but uses Windows APIs (`CreateProcessAsUser`) to launch applications in the active user's session. This means no credential configuration is needed, and applications launch properly in your desktop.
+- Start the application immediately
 
 ## Configuration
 
 ### Using the GUI Configurator
 
-1. **Open Start Menu** and search for "HP Button Remap Configurator"
-2. **Click** the configurator app
-3. **Add/Edit/Delete** button actions using the GUI
-4. **Save** your configuration
-5. **Restart Service** button to apply changes
+1. **Right-click** the tray icon and select **"Open Configurator"**
+   - OR open Start Menu and search for "HP Button Remap Configurator"
+2. **Add/Edit/Delete** button actions using the GUI
+3. **Save** your configuration
+4. **Right-click** tray icon and select **"Reload Configuration"** to apply changes
 
-### GUI Features
+### Using the Tray Menu
 
-- **Add new actions** - Click "Add" to create a new button action
-- **Edit existing actions** - Select an action and click "Edit"
-- **Delete actions** - Select an action and click "Delete"
-- **Action Types:**
-  - **Launch App** - Browse for an executable, add command-line arguments
-  - **Open Website** - Enter any URL
-  - **Send Keys** - Specify key combinations (e.g., Ctrl+Shift+T)
+Right-click the tray icon for quick access to:
+- **Open Configuration** - Edit config.json directly
+- **Open Configurator** - Launch the GUI configurator
+- **Reload Configuration** - Apply changes after editing
+- **About** - View application info
+- **Exit** - Close the application
 
-### Manual Configuration (Advanced)
+### Action Types
 
-The configuration file is stored at:
-```
-C:\Program Files\HPButtonRemap\config.json
-```
-
-You can edit it manually if needed. See `CONFIG-EXAMPLES.md` for examples.
-
-## Action Types
-
-### Launch Application
+#### Launch Application
 - Browse to select any `.exe` file
 - Optionally add command-line arguments
 - Example: Launch Chrome with a specific URL
 
-### Open Website
+#### Open Website
 - Enter any website URL
 - Opens in your default browser
 - Example: `https://www.google.com`
 
-### Send Keyboard Shortcut
+#### Send Keyboard Shortcut
 - Specify key combinations with `+` separator
 - Supported keys: Ctrl, Shift, Alt, Win, F1-F12, A-Z, 0-9, special keys
 - Examples:
@@ -100,40 +86,32 @@ You can edit it manually if needed. See `CONFIG-EXAMPLES.md` for examples.
 
 ## Uninstallation
 
-1. **Right-click** `Uninstall-Service.ps1` and select **"Run with PowerShell"**
-2. **Accept** the UAC prompt
-3. **Choose** whether to keep your configuration file
+1. **Right-click** `Uninstall.ps1` and select **"Run with PowerShell"**
+2. **Choose** whether to keep your configuration file
 
 This will:
-- Stop and remove the Windows Service
+- Stop the application
+- Remove the Startup shortcut
 - Remove the Start Menu shortcut
 - Remove the installation directory
-- Optionally backup your config file
+- Optionally backup your config file to Desktop
 
 ## Troubleshooting
 
-### Service not starting
-- Open Services (`services.msc`)
-- Find "HP Button Remap Service"
-- Check the startup type is "Automatic"
-- Try starting it manually
-- Check Windows Event Log for errors
+### Tray icon not visible
+- Check if the application is running in Task Manager
+- Look in the hidden icons area of the system tray
+- Restart the application from the Start Menu
 
 ### Button not responding
-- Open the configurator
-- Verify Event ID is `29` and Event Data is `8616`
+- Right-click tray icon and select "Reload Configuration"
+- Verify Event ID is `29` and Event Data is `8616` in your config
 - Make sure your action details are correct
-- Save and restart the service
 
 ### Configurator won't open
 - Make sure you have the latest release
-- Check that `HPButtonRemapConfig.exe` exists in Program Files
-- Run as administrator if needed
-
-### Configuration not applying
-- After making changes in the GUI, click "Restart Service"
-- Check that config.json was updated (modify date should change)
-- Restart the service manually from Services if needed
+- Check that `HPButtonRemapConfig.exe` exists in `%LOCALAPPDATA%\HPButtonRemap\`
+- Try editing the config.json file directly instead
 
 ## Finding Your Button's Event ID
 
@@ -161,18 +139,18 @@ If you want to map a different HP special key:
    Remove-Event *
    ```
 
-6. Enter these values in the configurator GUI
+6. Enter these values in the configurator GUI or config.json
 
 ## Technical Details
 
-- **Service**: Windows Service (Background Service Worker)
+- **Architecture**: Windows Forms tray application
 - **GUI**: WPF Application (.NET 8.0)
 - **Platform**: Windows (x64)
 - **Distribution**: Self-contained single-file executables
 - **Dependencies**: 
   - System.Management (WMI event monitoring)
   - Newtonsoft.Json (JSON configuration)
-- **Installation Location**: `C:\Program Files\HPButtonRemap\`
+- **Installation Location**: `%LOCALAPPDATA%\HPButtonRemap\`
 - **Configuration File**: `config.json` in installation directory
 
 ## Building from Source
@@ -184,7 +162,7 @@ If you want to build from source:
 git clone https://github.com/Shapes0/myhp-button-remap.git
 cd myhp-button-remap
 
-# Build the service
+# Build the tray application
 cd HPButtonRemap
 dotnet build --configuration Release
 
@@ -195,7 +173,7 @@ dotnet build --configuration Release
 # Return to root
 cd ..
 
-# Run Install-Service.ps1 as administrator
+# Run Install.ps1
 ```
 
 **Requirements for building:**
@@ -224,25 +202,24 @@ The configuration is stored in JSON format:
 
 See `CONFIG-EXAMPLES.md` for more examples.
 
-## Advantages Over Previous Versions
+## Advantages
 
-### vs. Scheduled Task
-- ✅ Cleaner - runs as a proper Windows Service
-- ✅ Better integration with Windows
-- ✅ Easier management through Services panel
-- ✅ Standard service control (start/stop/restart)
+### Simple & Lightweight
+- ✅ No Windows Service complexity
+- ✅ No Session 0 isolation issues
+- ✅ Runs directly in your user session
+- ✅ Visible in Task Manager
 
-### vs. Startup Folder
-- ✅ More reliable - service starts before user login
-- ✅ Survives logoff/switch user
-- ✅ Proper Windows Service lifecycle management
-- ✅ Better error recovery
+### Easy to Use
+- ✅ System tray integration
+- ✅ GUI configurator
+- ✅ No administrator rights needed (after installation)
+- ✅ Standard Windows application behavior
 
-### vs. Manual Config
-- ✅ GUI configurator - no need to edit JSON files
-- ✅ Validation - prevents configuration errors
-- ✅ User-friendly - accessible from Start Menu
-- ✅ Visual interface - easier for non-technical users
+### Reliable
+- ✅ Auto-starts on login
+- ✅ Applications launch in correct session
+- ✅ Easy to troubleshoot
 
 ## Contributing
 
