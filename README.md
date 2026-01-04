@@ -1,173 +1,141 @@
-# myhp-button-remap
+# HP Button Remap
 
-Native Windows application for remapping HP laptop special function keys.
+Windows Service with GUI Configurator for remapping HP laptop special function keys.
 
 ## Overview
 
-This is a **native Windows C# application** that monitors HP WMI events and allows you to configure custom actions when special HP laptop buttons are pressed. It runs efficiently in the background without the overhead of PowerShell scripts.
+This is a **Windows Service** with a **GUI configurator** that monitors HP WMI events and allows you to configure custom actions when special HP laptop buttons are pressed. The service runs as LocalSystem but uses Windows APIs to launch applications in your user session, providing a seamless experience without credential configuration.
+
+## Key Features
+
+- ✅ **Windows Service** - Runs automatically, no credential setup needed
+- ✅ **Launches in your session** - Uses Windows APIs to launch apps in the active user session
+- ✅ **GUI Configurator** - Easy-to-use interface accessible from Start Menu
+- ✅ **No manual config editing** - Configure everything through the GUI
+- ✅ **Multiple action types:**
+  - Launch Application (with parameters)
+  - Open Website
+  - Send Keyboard Shortcuts
+- ✅ **Simple installation** - Run one PowerShell script as admin
+- ✅ **Reliable** - Service auto-starts and recovers from crashes
 
 ## Problem
 
-HP laptops have special function keys (like F11 with custom icons) that trigger WMI events rather than standard keyboard input. These keys are invisible to tools like PowerToys and AutoHotkey, and can't be remapped normally.
+HP laptops have special function keys (like F11 with custom icons) that trigger WMI events rather than standard keyboard input. These keys are invisible to tools like PowerToys and AutoHotkey.
 
 ## Solution
 
-This native Windows application monitors HP's WMI events (`hpqBEvnt` in the `root\wmi` namespace) and executes configurable actions when these special keys are pressed.
-
-## Features
-
-- ✅ Native Windows executable (no PowerShell overhead)
-- ✅ Detects HP special function keys via WMI events
-- ✅ Multiple action types:
-  - **Launch Application** - Start any program with optional command-line arguments
-  - **Open Website** - Open URLs in your default browser
-  - **Send Key Combo** - Simulate keyboard shortcuts (e.g., Ctrl+Shift+T)
-- ✅ JSON-based configuration
-- ✅ Runs automatically at logon via scheduled task
-- ✅ Supports multiple button mappings
-- ✅ Lightweight and efficient
-- ✅ Easy install/uninstall scripts
+This Windows Service monitors HP's WMI events (`hpqBEvnt`) and executes configured actions. Configure it easily through the GUI app in your Start Menu.
 
 ## Requirements
 
 - Windows 10/11
 - HP laptop with special function keys
-- .NET 8.0 Runtime (only needed if building from source)
-- Administrator privileges (for installation only)
+- Administrator privileges (for initial installation only)
+- No .NET runtime needed (self-contained executable)
 
-## Quick Start
+## Installation
 
-### Using Pre-built Binary (Recommended)
+1. **Download** the latest release from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
+2. **Extract** the ZIP file to a temporary folder
+3. **Right-click** `Install.ps1` and select **"Run with PowerShell"**
+4. **Accept** the UAC prompt (administrator required)
+5. **Done!** The service is now running
 
-1. **Download the latest release** from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
-2. **Extract the ZIP file** to a folder of your choice
-3. **Edit** `config.json` to set your desired actions (see examples below)
-4. **Choose installation method:**
-   - **Simple (No Admin):** Right-click `Install-Startup.ps1` and select **"Run with PowerShell"**
-   - **Advanced (Requires Admin):** Right-click `Install.ps1` and select **"Run with PowerShell"** and accept the UAC prompt
-5. The application will start automatically at next logon
+The installer will:
+- Install the service to `C:\Program Files\HPButtonRemap\`
+- Start the service as LocalSystem (no credential configuration needed)
+- Add "HP Button Remap Configurator" to your Start Menu
 
-See the **Installation** section below for details on each method.
-
-### Building from Source
-
-If you want to build from source instead of using the prebuilt binary:
-
-```powershell
-# Clone the repository
-git clone https://github.com/Shapes0/myhp-button-remap.git
-cd myhp-button-remap
-
-# Build the project
-cd HPButtonRemap
-dotnet build --configuration Release
-
-# Return to root and install
-cd ..
-# Right-click Install.ps1 and select "Run with PowerShell"
-```
-
-**Requirements for building from source:**
-- .NET 8.0 SDK
-- Windows 10/11
+**How it works:** The service runs in Session 0 but uses Windows APIs (`CreateProcessAsUser`) to launch applications in the active user's session. This means no credential configuration is needed, and applications launch properly in your desktop.
 
 ## Configuration
 
-Edit `config.json` in the root directory to define your button action:
+### Using the GUI Configurator
 
-```json
-{
-  "ButtonActions": [
-    {
-      "Name": "F11 Key - Launch Notepad",
-      "EventID": 29,
-      "EventData": 8616,
-      "Type": "LaunchApp",
-      "LaunchPath": "notepad.exe",
-      "LaunchArguments": ""
-    }
-  ]
-}
+1. **Open Start Menu** and search for "HP Button Remap Configurator"
+2. **Click** the configurator app
+3. **Add/Edit/Delete** button actions using the GUI
+4. **Save** your configuration
+5. **Restart Service** button to apply changes
+
+### GUI Features
+
+- **Add new actions** - Click "Add" to create a new button action
+- **Edit existing actions** - Select an action and click "Edit"
+- **Delete actions** - Select an action and click "Delete"
+- **Action Types:**
+  - **Launch App** - Browse for an executable, add command-line arguments
+  - **Open Website** - Enter any URL
+  - **Send Keys** - Specify key combinations (e.g., Ctrl+Shift+T)
+
+### Manual Configuration (Advanced)
+
+The configuration file is stored at:
+```
+C:\Program Files\HPButtonRemap\config.json
 ```
 
-### Configuration Fields
+You can edit it manually if needed. See `CONFIG-EXAMPLES.md` for examples.
 
-- **Name**: Descriptive name for the action (for your reference)
-- **EventID**: The WMI event ID for your key (29 for the HP F11 button)
-- **EventData**: Additional event data to filter on (8616 for the HP F11 button)
-- **Type**: Action type - one of: `LaunchApp`, `OpenWebsite`, or `SendKeys`
-- **LaunchPath**: Path to executable (for `LaunchApp` type)
-- **LaunchArguments**: Command-line arguments (for `LaunchApp` type, optional)
-- **WebsiteUrl**: URL to open (for `OpenWebsite` type)
-- **KeyCombo**: Keyboard shortcut to send (for `SendKeys` type, e.g., "Ctrl+Shift+T")
+## Action Types
 
-### Action Type Examples
+### Launch Application
+- Browse to select any `.exe` file
+- Optionally add command-line arguments
+- Example: Launch Chrome with a specific URL
 
-#### Launch an Application
+### Open Website
+- Enter any website URL
+- Opens in your default browser
+- Example: `https://www.google.com`
 
-```json
-{
-  "Name": "Open Calculator",
-  "EventID": 29,
-  "EventData": 8616,
-  "Type": "LaunchApp",
-  "LaunchPath": "calc.exe",
-  "LaunchArguments": ""
-}
-```
+### Send Keyboard Shortcut
+- Specify key combinations with `+` separator
+- Supported keys: Ctrl, Shift, Alt, Win, F1-F12, A-Z, 0-9, special keys
+- Examples:
+  - `Ctrl+Shift+T` - Reopen closed tab
+  - `Win+D` - Show desktop
+  - `Ctrl+Alt+Delete` - Security screen
 
-#### Launch Application with Arguments
+## Uninstallation
 
-```json
-{
-  "Name": "Open Notepad with File",
-  "EventID": 29,
-  "EventData": 8616,
-  "Type": "LaunchApp",
-  "LaunchPath": "C:\\Windows\\System32\\notepad.exe",
-  "LaunchArguments": "C:\\Users\\YourName\\Documents\\notes.txt"
-}
-```
+1. **Right-click** `Uninstall-Service.ps1` and select **"Run with PowerShell"**
+2. **Accept** the UAC prompt
+3. **Choose** whether to keep your configuration file
 
-#### Open a Website
+This will:
+- Stop and remove the Windows Service
+- Remove the Start Menu shortcut
+- Remove the installation directory
+- Optionally backup your config file
 
-```json
-{
-  "Name": "Open Google",
-  "EventID": 29,
-  "EventData": 8616,
-  "Type": "OpenWebsite",
-  "WebsiteUrl": "https://www.google.com"
-}
-```
+## Troubleshooting
 
-#### Send Keyboard Shortcut
+### Service not starting
+- Open Services (`services.msc`)
+- Find "HP Button Remap Service"
+- Check the startup type is "Automatic"
+- Try starting it manually
+- Check Windows Event Log for errors
 
-```json
-{
-  "Name": "Reopen Closed Tab",
-  "EventID": 29,
-  "EventData": 8616,
-  "Type": "SendKeys",
-  "KeyCombo": "Ctrl+Shift+T"
-}
-```
+### Button not responding
+- Open the configurator
+- Verify Event ID is `29` and Event Data is `8616`
+- Make sure your action details are correct
+- Save and restart the service
 
-**Supported Keys for KeyCombo:**
-- Modifiers: `Ctrl`, `Shift`, `Alt`, `Win`
-- Function Keys: `F1` through `F12`
-- Special Keys: `Esc`, `Tab`, `Enter`, `Space`, `Backspace`, `Delete`, `Insert`, `Home`, `End`, `PageUp`, `PageDown`, `Up`, `Down`, `Left`, `Right`
-- Letters: `A` through `Z`
-- Numbers: `0` through `9`
+### Configurator won't open
+- Make sure you have the latest release
+- Check that `HPButtonRemapConfig.exe` exists in Program Files
+- Run as administrator if needed
 
-**Examples:**
-- `Ctrl+C` - Copy
-- `Ctrl+V` - Paste
-- `Alt+Tab` - Switch windows
-- `Win+D` - Show desktop
-- `Ctrl+Shift+Esc` - Task Manager
+### Configuration not applying
+- After making changes in the GUI, click "Restart Service"
+- Check that config.json was updated (modify date should change)
+- Restart the service manually from Services if needed
 
-## Finding Your Key's EventID
+## Finding Your Button's Event ID
 
 If you want to map a different HP special key:
 
@@ -193,142 +161,88 @@ If you want to map a different HP special key:
    Remove-Event *
    ```
 
-6. Add these values to your `config.json`
+6. Enter these values in the configurator GUI
 
-## Multiple Button Actions
+## Technical Details
 
-If your HP laptop has multiple special buttons with different EventIDs, you can configure them all:
+- **Service**: Windows Service (Background Service Worker)
+- **GUI**: WPF Application (.NET 8.0)
+- **Platform**: Windows (x64)
+- **Distribution**: Self-contained single-file executables
+- **Dependencies**: 
+  - System.Management (WMI event monitoring)
+  - Newtonsoft.Json (JSON configuration)
+- **Installation Location**: `C:\Program Files\HPButtonRemap\`
+- **Configuration File**: `config.json` in installation directory
+
+## Building from Source
+
+If you want to build from source:
+
+```powershell
+# Clone the repository
+git clone https://github.com/Shapes0/myhp-button-remap.git
+cd myhp-button-remap
+
+# Build the service
+cd HPButtonRemap
+dotnet build --configuration Release
+
+# Build the configurator
+cd ../HPButtonRemapConfig
+dotnet build --configuration Release
+
+# Return to root
+cd ..
+
+# Run Install-Service.ps1 as administrator
+```
+
+**Requirements for building:**
+- .NET 8.0 SDK
+- Windows 10/11
+- Visual Studio or VS Code (optional, for IDE support)
+
+## Configuration File Format
+
+The configuration is stored in JSON format:
 
 ```json
 {
   "ButtonActions": [
     {
-      "Name": "F11 - Open Browser",
+      "Name": "F11 Key - Launch Notepad",
       "EventID": 29,
       "EventData": 8616,
-      "Type": "OpenWebsite",
-      "WebsiteUrl": "https://www.google.com"
-    },
-    {
-      "Name": "Another Button",
-      "EventID": 15,
-      "EventData": 4321,
       "Type": "LaunchApp",
-      "LaunchPath": "calc.exe"
+      "LaunchPath": "notepad.exe",
+      "LaunchArguments": ""
     }
   ]
 }
 ```
 
-Note: Most HP laptops only have one special button (EventID 29, EventData 8616). Use the discovery method below if you want to find additional buttons.
+See `CONFIG-EXAMPLES.md` for more examples.
 
-## Installation
+## Advantages Over Previous Versions
 
-There are two installation methods available:
+### vs. Scheduled Task
+- ✅ Cleaner - runs as a proper Windows Service
+- ✅ Better integration with Windows
+- ✅ Easier management through Services panel
+- ✅ Standard service control (start/stop/restart)
 
-### Method 1: Startup Folder (Recommended - No Admin Required)
+### vs. Startup Folder
+- ✅ More reliable - service starts before user login
+- ✅ Survives logoff/switch user
+- ✅ Proper Windows Service lifecycle management
+- ✅ Better error recovery
 
-Right-click `Install-Startup.ps1` and select **"Run with PowerShell"**
-
-**Advantages:**
-- ✅ No administrator privileges required
-- ✅ Simpler setup - just a shortcut in your Startup folder
-- ✅ Easy to remove - just delete the shortcut
-- ✅ Runs hidden in the background (no console window)
-
-**How it works:**
-- Creates a VBS script to run the app without a console window
-- Places a shortcut in your Startup folder
-- Starts automatically when you log in
-
-**To uninstall:** Right-click `Uninstall-Startup.ps1` and select **"Run with PowerShell"**
-
-### Method 2: Scheduled Task (Advanced - Requires Admin)
-
-Right-click `Install.ps1` and select **"Run with PowerShell"**
-
-**Advantages:**
-- ✅ Automatic restart if the application crashes
-- ✅ More robust for critical applications
-- ✅ Centralized management in Task Scheduler
-
-**How it works:**
-- Creates a scheduled task that runs at logon
-- Configured to restart on failure (up to 3 times)
-- Requires administrator privileges to install
-
-**To uninstall:** Right-click `Uninstall.ps1` and select **"Run with PowerShell"**
-
-## Troubleshooting
-
-### Application not starting (Startup Folder method)
-- Check if the shortcut exists in your Startup folder: `shell:startup`
-- Look for `HPButtonRemap-Hidden.vbs` in the application directory
-- Try running the VBS script manually to see if there are errors
-- Check Task Manager for running `HPButtonRemap.exe` process
-
-### Application not starting (Scheduled Task method)
-- Open Task Scheduler (`taskschd.msc`)
-- Find "HP-Button-Remap" task
-- Check the "History" tab for errors
-- Try running manually: `Start-ScheduledTask -TaskName "HP-Button-Remap"`
-
-### Key not responding
-- Verify your EventID and EventData are correct (use the discovery method above)
-- Check the configuration file syntax
-- Make sure the action details are correct (e.g., valid file path for LaunchApp)
-
-### Build errors
-- Ensure .NET 8.0 SDK is installed: `dotnet --version`
-- Run `dotnet restore` in the HPButtonRemap directory
-- Check for any error messages during build
-
-### Permission errors
-- Ensure you ran `Install.ps1` as Administrator
-- The scheduled task needs to run with your user account
-- For SendKeys actions, the application needs to be in the foreground context
-
-## How It Works
-
-1. The native C# application uses the `System.Management` library to subscribe to HP's WMI events
-2. When you press a special key, HP's ACPI driver fires a WMI event with specific EventID and EventData
-3. The application catches this event and executes your configured action
-4. The scheduled task keeps the application running in the background
-
-## Technical Details
-
-- **Language**: C# / .NET 8.0
-- **Platform**: Windows (net8.0-windows)
-- **Dependencies**: 
-  - System.Management 10.0.1 (WMI event monitoring)
-  - Newtonsoft.Json 13.0.4 (JSON configuration parsing)
-- **Architecture**: Single-threaded event-driven design
-- **Distribution**: Prebuilt binaries available via GitHub Releases, automated by GitHub Actions
-
-## Releases
-
-Prebuilt binaries are automatically compiled and packaged using GitHub Actions whenever a new version tag is created. 
-
-**For Users:**
-- Download the latest release ZIP from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
-- The ZIP contains everything you need: the executable, config files, and install scripts
-- No need to install .NET SDK or build from source
-
-**For Maintainers:**
-To create a new release:
-1. Tag the commit with a version number: `git tag v1.0.0`
-2. Push the tag: `git push origin v1.0.0`
-3. GitHub Actions will automatically build and create a release with the compiled binary
-
-## Differences from Previous PowerShell Version
-
-The original PowerShell-based implementation has been replaced with this native application for the following benefits:
-
-- **Better Performance**: Native compiled code vs. interpreted PowerShell
-- **Lower Resource Usage**: No PowerShell host overhead
-- **More Reliable**: Proper error handling and restart capabilities
-- **Extended Functionality**: Support for key combos and more action types
-- **Cleaner Implementation**: Strongly-typed configuration and proper separation of concerns
+### vs. Manual Config
+- ✅ GUI configurator - no need to edit JSON files
+- ✅ Validation - prevents configuration errors
+- ✅ User-friendly - accessible from Start Menu
+- ✅ Visual interface - easier for non-technical users
 
 ## Contributing
 

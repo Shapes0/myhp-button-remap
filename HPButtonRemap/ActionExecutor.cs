@@ -57,15 +57,32 @@ public class ActionExecutor
             return;
         }
 
-        var startInfo = new ProcessStartInfo
+        // If running as a service (Session 0), use special launcher to launch in user session
+        if (UserSessionLauncher.IsRunningAsService())
         {
-            FileName = action.LaunchPath,
-            Arguments = action.LaunchArguments ?? string.Empty,
-            UseShellExecute = true
-        };
+            logger.LogInformation("Running as service, launching in user session...");
+            if (UserSessionLauncher.LaunchProcessInUserSession(action.LaunchPath, action.LaunchArguments ?? string.Empty, out string error))
+            {
+                logger.LogInformation("Launched in user session: {LaunchPath} {LaunchArguments}", action.LaunchPath, action.LaunchArguments);
+            }
+            else
+            {
+                logger.LogError("Failed to launch in user session: {Error}", error);
+            }
+        }
+        else
+        {
+            // Normal launch when running in user context
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = action.LaunchPath,
+                Arguments = action.LaunchArguments ?? string.Empty,
+                UseShellExecute = true
+            };
 
-        Process.Start(startInfo);
-        logger.LogInformation("Launched: {LaunchPath} {LaunchArguments}", action.LaunchPath, action.LaunchArguments);
+            Process.Start(startInfo);
+            logger.LogInformation("Launched: {LaunchPath} {LaunchArguments}", action.LaunchPath, action.LaunchArguments);
+        }
     }
 
     /// <summary>
@@ -79,14 +96,32 @@ public class ActionExecutor
             return;
         }
 
-        var startInfo = new ProcessStartInfo
+        // If running as a service (Session 0), use special launcher to launch in user session
+        if (UserSessionLauncher.IsRunningAsService())
         {
-            FileName = action.WebsiteUrl,
-            UseShellExecute = true
-        };
+            logger.LogInformation("Running as service, launching browser in user session...");
+            // Use cmd /c start to open URL with default browser
+            if (UserSessionLauncher.LaunchProcessInUserSession("cmd.exe", $"/c start \"\" \"{action.WebsiteUrl}\"", out string error))
+            {
+                logger.LogInformation("Opened website in user session: {WebsiteUrl}", action.WebsiteUrl);
+            }
+            else
+            {
+                logger.LogError("Failed to open website in user session: {Error}", error);
+            }
+        }
+        else
+        {
+            // Normal launch when running in user context
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = action.WebsiteUrl,
+                UseShellExecute = true
+            };
 
-        Process.Start(startInfo);
-        logger.LogInformation("Opened website: {WebsiteUrl}", action.WebsiteUrl);
+            Process.Start(startInfo);
+            logger.LogInformation("Opened website: {WebsiteUrl}", action.WebsiteUrl);
+        }
     }
 
     /// <summary>
