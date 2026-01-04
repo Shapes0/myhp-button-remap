@@ -1,152 +1,252 @@
-# myhp-button-remap
+# HP Button Remap
 
-Remap F11 key MyHP/HP System Event Utility button
+Lightweight tray application for remapping HP laptop special function keys.
 
-After some back and forth with Claude I was able to figure this out. This is a rudimentary script, use at your own risk. Tested on an HP OmniBook, YMMV on other models.
+## Overview
 
-Custom handler for HP laptop special function keys that don't generate standard keyboard scancodes.
+This is a **Windows tray application** that monitors HP WMI events and allows you to configure custom actions when special HP laptop buttons are pressed. The application runs in your user session with a system tray icon.
+
+## Key Features
+
+- ✅ **Simple tray application** - Runs in your system tray
+- ✅ **No administrator required** - Installs to your user account
+- ✅ **GUI Configurator** - Easy-to-use interface for configuration
+- ✅ **Multiple action types:**
+  - Launch Application (with parameters)
+  - Open Website
+  - Send Keyboard Shortcuts
+- ✅ **Auto-start** - Automatically starts when you log in
+- ✅ **Lightweight** - Minimal resource usage
 
 ## Problem
 
-HP laptops have special function keys (like F11 with custom icons) that trigger WMI events rather than standard keyboard input. These keys are invisible to tools like PowerToys and AutoHotkey, and can't be remapped normally.
+HP laptops have special function keys (like F11 with custom icons) that trigger WMI events rather than standard keyboard input. These keys are invisible to tools like PowerToys and AutoHotkey.
 
 ## Solution
 
-This tool monitors HP's WMI events (`hpqBEvnt` in the `root\wmi` namespace) and launches applications or commands when these special keys are pressed.
-
-## Features
-
-- ✅ Detects HP special function keys via WMI events
-- ✅ Simple JSON configuration
-- ✅ Runs automatically at logon via scheduled task
-- ✅ Supports multiple hotkeys
-- ✅ Lightweight and efficient
-- ✅ Easy install/uninstall scripts
+This lightweight tray application monitors HP's WMI events (`hpqBEvnt`) and executes configured actions. Configure it easily through the GUI or by right-clicking the tray icon.
 
 ## Requirements
 
 - Windows 10/11
 - HP laptop with special function keys
-- PowerShell 5.1 or later
-- Administrator privileges (for installation only)
+- **.NET 8.0 Runtime** ([Download here](https://dotnet.microsoft.com/download/dotnet/8.0/runtime) - most modern Windows systems already have this)
 
-## Quick Start
+## Installation
 
-1. **Clone or download** this repository
-2. **Right-click** `Install.ps1` and select **"Run with PowerShell"**
-3. Accept the UAC prompt
-4. **Edit** `config.json` to set your desired application
-5. **Restart** or run: `Start-ScheduledTask -TaskName "HP-WMI-Hotkey-Handler"`
+**Simple One-Click Installation:**
+
+1. **Download** `HPButtonRemap-Installer.exe` (~66MB) from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
+2. **Run** the installer
+3. **Click "Install"**
+4. **Done!** The tray icon should appear in your system tray
+
+The installer will:
+- Install the application to `%LOCALAPPDATA%\HPButtonRemap\` (~3MB)
+- Add a shortcut to your Startup folder (auto-start on login)
+- Add "HP Button Remap Configurator" to your Start Menu
+- Start the application immediately
 
 ## Configuration
 
-Edit `config.json` to define your hotkeys:
+### Using the GUI Configurator
 
-```
-{
-"Hotkeys": [
-{
-"Name": "F11 Key",
-"EventID": 29,
-"EventData": 8616,
-"Command": "notepad.exe"
-}
-]
-}
-```
+1. **Right-click** the tray icon and select **"Open Configurator"**
+   - OR open Start Menu and search for "HP Button Remap Configurator"
+2. **Add/Edit/Delete** button actions using the GUI
+3. **Save** your configuration
+4. **Right-click** tray icon and select **"Reload Configuration"** to apply changes
 
-### Configuration Fields
+### Using the Tray Menu
 
-- **Name**: Descriptive name for the hotkey (for your reference)
-- **EventID**: The WMI event ID for your key (see below for how to find this)
-- **EventData**: Additional event data to filter on (optional but recommended)
-- **Command**: The executable or command to run when the key is pressed
+Right-click the tray icon for quick access to:
+- **Open Configuration** - Edit config.json directly
+- **Open Configurator** - Launch the GUI configurator
+- **Reload Configuration** - Apply changes after editing
+- **About** - View application info
+- **Exit** - Close the application
 
-### Command Examples
+### Action Types
 
-`"Command": "notepad.exe"`
+#### Launch Application
+- Browse to select any `.exe` file
+- Optionally add command-line arguments
+- Example: Launch Chrome with a specific URL
 
-`"Command": "C:\Program Files\MyApp\app.exe"`
+#### Open Website
+- Enter any website URL
+- Opens in your default browser
+- Example: `https://www.google.com`
 
-`"Command": "powershell.exe -Command Get-Process | Out-GridView"`
+#### Send Keyboard Shortcut
+- Specify key combinations with `+` separator
+- Supported keys: Ctrl, Shift, Alt, Win, F1-F12, A-Z, 0-9, special keys
+- Examples:
+  - `Ctrl+Shift+T` - Reopen closed tab
+  - `Win+D` - Show desktop
+  - `Ctrl+Alt+Delete` - Security screen
 
-## Finding Your Key's EventID
+## Uninstallation
+
+**Method 1: Via Tray Icon** (Easiest)
+1. **Right-click** the tray icon
+2. Select **"Uninstall..."**
+3. **Confirm** the uninstallation
+4. Your configuration will be backed up to your Desktop
+
+**Method 2: Via Installer**
+1. Run `HPButtonRemap-Installer.exe --uninstall`
+2. Follow the uninstallation wizard
+
+This will:
+- Stop the application
+- Remove the Startup shortcut
+- Remove the Start Menu shortcut
+- Remove the installation directory
+- Optionally backup your config file to Desktop
+
+## Troubleshooting
+
+### Tray icon not visible
+- Check if the application is running in Task Manager
+- Look in the hidden icons area of the system tray
+- Restart the application from the Start Menu
+
+### Button not responding
+- Right-click tray icon and select "Reload Configuration"
+- Verify Event ID is `29` and Event Data is `8616` in your config
+- Make sure your action details are correct
+
+### Configurator won't open
+- Make sure you have the latest release
+- Check that `HPButtonRemapConfig.exe` exists in `%LOCALAPPDATA%\HPButtonRemap\`
+- Try editing the config.json file directly instead
+
+## Finding Your Button's Event ID
 
 If you want to map a different HP special key:
 
 1. Open PowerShell and run:
-`Register-WmiEvent -Namespace "root\wmi" -Query "SELECT * FROM hpqBEvnt" -SourceIdentifier "HPTest"`
+   ```powershell
+   Register-WmiEvent -Namespace "root\wmi" -Query "SELECT * FROM hpqBEvnt" -SourceIdentifier "HPTest"
+   ```
 
 2. Press your special key
 
 3. Check the event details:
-```
-Get-Event -SourceIdentifier "HPTest" | ForEach-Object {
-$_.SourceEventArgs.NewEvent | Format-List EventID, EventData
-}
-```
+   ```powershell
+   Get-Event -SourceIdentifier "HPTest" | ForEach-Object {
+       $_.SourceEventArgs.NewEvent | Format-List EventID, EventData
+   }
+   ```
 
 4. Note the `EventID` and `EventData` values
 
 5. Clean up:
+   ```powershell
+   Unregister-Event -SourceIdentifier "HPTest"
+   Remove-Event *
+   ```
+
+6. Enter these values in the configurator GUI or config.json
+
+## Technical Details
+
+- **Architecture**: Windows Forms tray application
+- **GUI**: WPF Application (.NET 8.0)
+- **Platform**: Windows (x64)
+- **Distribution**: Self-contained single-file executables
+- **Dependencies**: 
+  - System.Management (WMI event monitoring)
+  - Newtonsoft.Json (JSON configuration)
+- **Installation Location**: `%LOCALAPPDATA%\HPButtonRemap\`
+- **Configuration File**: `config.json` in installation directory
+
+## Building from Source
+
+If you want to build from source:
+
+```powershell
+# Clone the repository
+git clone https://github.com/Shapes0/myhp-button-remap.git
+cd myhp-button-remap
+
+# Build the tray application
+cd HPButtonRemap
+dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true
+
+# Build the configurator
+cd ../HPButtonRemapConfig
+dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true
+
+# Build the installer (optional - embeds the above two)
+cd ../Installer
+dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true
+
+# The installer will be in Installer/bin/Release/net8.0-windows/win-x64/publish/
 ```
-Unregister-Event -SourceIdentifier "HPTest"
-Remove-Event *
+
+**Requirements for building:**
+- .NET 8.0 SDK
+- Windows 10/11
+- Visual Studio or VS Code (optional, for IDE support)
+
+**Alternative: PowerShell Scripts**
+
+For manual installation without the GUI installer:
+```powershell
+# Build the components first, then run:
+.\Install.ps1
 ```
 
-7. Add these values to your `config.json`
+## Configuration File Format
 
-## Multiple Hotkeys
+The configuration is stored in JSON format:
 
-You can configure multiple keys:
-
-```
+```json
 {
-"Hotkeys": [
-{
-"Name": "F11 Key",
-"EventID": 29,
-"EventData": 8616,
-"Command": "notepad.exe"
-},
-{
-"Name": "Calculator Key",
-"EventID": 15,
-"EventData": 4321,
-"Command": "calc.exe"
+  "ShowStartupNotification": true,
+  "ButtonActions": [
+    {
+      "Name": "F11 Key - Launch Notepad",
+      "EventID": 29,
+      "EventData": 8616,
+      "Type": "LaunchApp",
+      "LaunchPath": "notepad.exe",
+      "LaunchArguments": ""
+    }
+  ]
 }
-]
-}
 ```
 
-## Uninstallation
+**Settings:**
+- `ShowStartupNotification` - (true/false) Show balloon notification when tray app starts with action count. Can be disabled in the configurator GUI if you find it annoying.
 
-Right-click `Uninstall.ps1` and select **"Run with PowerShell"**
+See `CONFIG-EXAMPLES.md` for more examples.
 
-## Troubleshooting
+## Advantages
 
-### Handler not starting
-- Open Task Scheduler (`taskschd.msc`)
-- Find "HP-WMI-Hotkey-Handler" task
-- Check the "History" tab for errors
-- Try running manually: `Start-ScheduledTask -TaskName "HP-WMI-Hotkey-Handler"`
+### Simple & Lightweight
+- ✅ No Windows Service complexity
+- ✅ No Session 0 isolation issues
+- ✅ Runs directly in your user session
+- ✅ Visible in Task Manager
 
-### Key not responding
-- Verify your EventID and EventData are correct (use the discovery method above)
-- Make sure the command path is correct
-- Test the command directly in PowerShell first
+### Easy to Use
+- ✅ System tray integration
+- ✅ GUI configurator
+- ✅ No administrator rights needed (after installation)
+- ✅ Standard Windows application behavior
 
-### Permission errors
-- Ensure you ran `Install.ps1` as Administrator
-- The scheduled task needs to run with your user account
-
-## How It Works
-
-1. The script uses PowerShell's `Register-WmiEvent` to subscribe to HP's WMI events
-2. When you press a special key, HP's ACPI driver fires a WMI event with specific EventID and EventData
-3. The script catches this event and executes your configured command
-4. The scheduled task keeps the handler running in the background
+### Reliable
+- ✅ Auto-starts on login
+- ✅ Applications launch in correct session
+- ✅ Easy to troubleshoot
 
 ## Contributing
 
 Contributions welcome! Please open an issue or PR.
+
+## License
+
+MIT License - See LICENSE file for details

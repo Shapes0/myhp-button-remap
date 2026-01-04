@@ -1,0 +1,98 @@
+<Window x:Class="HPButtonRemapConfig.ActionEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edit Button Action" Height="500" Width="600"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Name -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="Action Name:" FontWeight="Bold"/>
+            <TextBox x:Name="NameTextBox" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <!-- Event IDs -->
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Event ID:" FontWeight="Bold"/>
+                <TextBox x:Name="EventIDTextBox" Margin="0,5,0,0"/>
+                <TextBlock Text="Usually 29 for HP F11 button" Foreground="Gray" FontSize="10" Margin="0,2,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Event Data:" FontWeight="Bold"/>
+                <TextBox x:Name="EventDataTextBox" Margin="0,5,0,0"/>
+                <TextBlock Text="Usually 8616 for HP F11 button" Foreground="Gray" FontSize="10" Margin="0,2,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Action Type -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+            <TextBlock Text="Action Type:" FontWeight="Bold"/>
+            <ComboBox x:Name="ActionTypeComboBox" Margin="0,5,0,0" SelectionChanged="ActionTypeComboBox_SelectionChanged">
+                <ComboBoxItem Content="Launch Application" Tag="LaunchApp"/>
+                <ComboBoxItem Content="Open Website" Tag="OpenWebsite"/>
+                <ComboBoxItem Content="Send Key Combo" Tag="SendKeys"/>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- Details Panel -->
+        <Border Grid.Row="4" BorderBrush="LightGray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+            <StackPanel x:Name="DetailsPanel">
+                <!-- LaunchApp Panel -->
+                <StackPanel x:Name="LaunchAppPanel" Visibility="Collapsed">
+                    <TextBlock Text="Application Path:" FontWeight="Bold"/>
+                    <Grid Margin="0,5,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="LaunchPathTextBox" Grid.Column="0"/>
+                        <Button x:Name="BrowseButton" Content="Browse..." Grid.Column="1" Width="80" Margin="5,0,0,0" Click="BrowseButton_Click"/>
+                    </Grid>
+                    
+                    <TextBlock Text="Arguments (optional):" FontWeight="Bold"/>
+                    <TextBox x:Name="LaunchArgsTextBox" Margin="0,5,0,0"/>
+                    <TextBlock Text="Example: --some-flag /option" Foreground="Gray" FontSize="10" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- OpenWebsite Panel -->
+                <StackPanel x:Name="OpenWebsitePanel" Visibility="Collapsed">
+                    <TextBlock Text="Website URL:" FontWeight="Bold"/>
+                    <TextBox x:Name="WebsiteUrlTextBox" Margin="0,5,0,0"/>
+                    <TextBlock Text="Example: https://www.google.com" Foreground="Gray" FontSize="10" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- SendKeys Panel -->
+                <StackPanel x:Name="SendKeysPanel" Visibility="Collapsed">
+                    <TextBlock Text="Key Combination:" FontWeight="Bold"/>
+                    <TextBox x:Name="KeyComboTextBox" Margin="0,5,0,0"/>
+                    <TextBlock Text="Example: Ctrl+Shift+T" Foreground="Gray" FontSize="10" Margin="0,2,0,0"/>
+                    <TextBlock Text="Supported keys: Ctrl, Shift, Alt, Win, F1-F12, A-Z, 0-9, Tab, Enter, Esc, Space, etc." 
+                               Foreground="Gray" FontSize="10" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="OKButton" Content="OK" Width="100" Height="30" Margin="5,0" Click="OKButton_Click" IsDefault="True"/>
+            <Button x:Name="CancelButton" Content="Cancel" Width="100" Height="30" Margin="5,0" Click="CancelButton_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

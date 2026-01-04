@@ -1,0 +1,87 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore Service dependencies
+      run: dotnet restore HPButtonRemap/HPButtonRemap.csproj
+      
+    - name: Build Service (Release)
+      run: dotnet build HPButtonRemap/HPButtonRemap.csproj --configuration Release --no-restore
+      
+    - name: Publish Service (framework-dependent)
+      run: dotnet publish HPButtonRemap/HPButtonRemap.csproj --configuration Release --runtime win-x64 --self-contained false --output ./publish/service
+      
+    - name: Restore Configurator dependencies
+      run: dotnet restore HPButtonRemapConfig/HPButtonRemapConfig.csproj
+      
+    - name: Build Configurator (Release)
+      run: dotnet build HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --no-restore
+      
+    - name: Publish Configurator (framework-dependent)
+      run: dotnet publish HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --runtime win-x64 --self-contained false --output ./publish/config
+      
+    - name: Publish Installer (framework-dependent single file with compression)
+      run: dotnet publish Installer/Installer.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true --output ./publish/installer
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: HPButtonRemap-Installer-${{ github.ref_name }}
+        path: ./publish/installer/HPButtonRemap-Installer.exe
+        
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./publish/installer/HPButtonRemap-Installer.exe
+        body: |
+          # HP Button Remap ${{ github.ref_name }}
+          
+          ## Requirements
+          
+          **.NET 8.0 Runtime** is required. Download from: https://dotnet.microsoft.com/download/dotnet/8.0/runtime
+          
+          Most modern Windows 10/11 systems already have this installed.
+          
+          ## Installation
+          
+          1. Download `HPButtonRemap-Installer.exe` (~66MB single file)
+          2. Run `HPButtonRemap-Installer.exe`
+          3. Click "Install"
+          
+          The installer will:
+          - Install the tray application to %LOCALAPPDATA%\HPButtonRemap (~3MB)
+          - Add a shortcut to your Startup folder (auto-start)
+          - Add a configurator to your Start Menu
+          - Start the application immediately
+          
+          ## Uninstallation
+          
+          Right-click the tray icon and select "Uninstall..."
+          
+          Or run `HPButtonRemap-Installer.exe --uninstall`
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
