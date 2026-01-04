@@ -13,11 +13,11 @@ public static class UserSessionLauncher
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern uint WTSGetActiveConsoleSessionId();
 
-    [DllImport("advapi32.dll", SetLastError = true)]
+    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern bool CreateProcessAsUser(
         IntPtr hToken,
-        string? lpApplicationName,
-        string lpCommandLine,
+        string lpApplicationName,
+        string? lpCommandLine,
         IntPtr lpProcessAttributes,
         IntPtr lpThreadAttributes,
         bool bInheritHandles,
@@ -244,16 +244,17 @@ public static class UserSessionLauncher
 
             PROCESS_INFORMATION processInfo;
 
-            // Build command line - needs to be mutable for CreateProcessAsUser
-            string commandLine = string.IsNullOrEmpty(arguments) 
-                ? $"\"{applicationPath}\"" 
-                : $"\"{applicationPath}\" {arguments}";
+            // For CreateProcessAsUser:
+            // - lpApplicationName should be the full path to the executable
+            // - lpCommandLine should be null or just the arguments (mutable buffer)
+            // This avoids issues with command line parsing
+            string? commandLine = string.IsNullOrEmpty(arguments) ? null : arguments;
 
             // Launch the process as the user
             bool result = CreateProcessAsUser(
                 duplicateToken,
-                null!,
-                commandLine,
+                applicationPath,
+                commandLine!,
                 IntPtr.Zero,
                 IntPtr.Zero,
                 false,
@@ -266,7 +267,7 @@ public static class UserSessionLauncher
             if (!result)
             {
                 int lastError = Marshal.GetLastWin32Error();
-                error = $"CreateProcessAsUser failed with error code {lastError}: {new Win32Exception(lastError).Message}. Command: {commandLine}";
+                error = $"CreateProcessAsUser failed with error code {lastError}: {new Win32Exception(lastError).Message}. App: {applicationPath}, Args: {arguments ?? "(none)"}";
                 return false;
             }
 
