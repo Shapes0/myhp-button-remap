@@ -84,9 +84,25 @@ namespace HPButtonRemapConfig
         {
             if (SaveConfiguration())
             {
-                // Config file will be automatically reloaded by the tray app's FileSystemWatcher
-                MessageBox.Show("Configuration saved and applied successfully!\n\nThe tray application will reload automatically.", 
+                // Signal the tray app to reload
+                SignalTrayAppReload();
+                
+                MessageBox.Show("Configuration saved and applied successfully!\n\nThe tray application is reloading now.", 
                     "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        
+        private void SignalTrayAppReload()
+        {
+            try
+            {
+                // Create a signal file that the tray app checks for
+                string signalFile = Path.Combine(Path.GetTempPath(), "HPButtonRemap_Reload.signal");
+                File.WriteAllText(signalFile, DateTime.Now.ToString());
+            }
+            catch
+            {
+                // Silently fail if we can't create signal
             }
         }
         

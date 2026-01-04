@@ -20,12 +20,15 @@ public class TrayApplicationContext : ApplicationContext
     private WmiEventMonitor? _monitor;
     private ActionExecutor _executor;
     private Config? _currentConfig;
-    private FileSystemWatcher? _configWatcher;
-    private System.Threading.Timer? _reloadDebounceTimer;
     private static readonly string ConfigPath = Path.Combine(
         AppDomain.CurrentDomain.BaseDirectory,
         "config.json"
     );
+    private static readonly string ReloadSignalFile = Path.Combine(
+        Path.GetTempPath(),
+        "HPButtonRemap_Reload.signal"
+    );
+    private System.Threading.Timer? _signalCheckTimer;
 
     public TrayApplicationContext()
     {
@@ -43,42 +46,19 @@ public class TrayApplicationContext : ApplicationContext
         // Load config and start monitoring
         StartMonitoring();
         
-        // Set up file watcher for automatic reload
-        SetupConfigWatcher();
+        // Set up periodic check for reload signal (every 1 second)
+        _signalCheckTimer = new System.Threading.Timer(_ => CheckForReloadSignal(), 
+            null, 1000, 1000);
     }
     
-    private void SetupConfigWatcher()
+    private void CheckForReloadSignal()
     {
         try
         {
-            var configDir = Path.GetDirectoryName(ConfigPath);
-            var configFile = Path.GetFileName(ConfigPath);
-            
-            if (configDir != null && Directory.Exists(configDir))
+            if (File.Exists(ReloadSignalFile))
             {
-                _configWatcher = new FileSystemWatcher(configDir, configFile)
-                {
-                    NotifyFilter = NotifyFilters.LastWrite,
-                    EnableRaisingEvents = true
-                };
+                File.Delete(ReloadSignalFile);
                 
-                _configWatcher.Changed += OnConfigFileChanged;
-            }
-        }
-        catch
-        {
-            // Silently fail if we can't set up file watcher
-        }
-    }
-    
-    private void OnConfigFileChanged(object sender, FileSystemEventArgs e)
-    {
-        // Debounce - only reload after file write is complete
-        _reloadDebounceTimer?.Dispose();
-        _reloadDebounceTimer = new System.Threading.Timer(_ =>
-        {
-            try
-            {
                 // Use invoke to run on UI thread
                 if (_trayIcon.ContextMenuStrip != null)
                 {
@@ -88,11 +68,11 @@ public class TrayApplicationContext : ApplicationContext
                     }));
                 }
             }
-            catch
-            {
-                // Ignore errors during automatic reload
-            }
-        }, null, 500, System.Threading.Timeout.Infinite);
+        }
+        catch
+        {
+            // Silently ignore errors checking for signal
+        }
     }
 
     private ContextMenuStrip CreateContextMenu()
