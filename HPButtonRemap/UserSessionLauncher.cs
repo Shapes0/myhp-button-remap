@@ -182,6 +182,59 @@ public static class UserSessionLauncher
     }
 
     /// <summary>
+    /// Resolve the full path to an executable, searching PATH if necessary
+    /// </summary>
+    private static string ResolveExecutablePath(string applicationPath)
+    {
+        // If it's already a full path, use it
+        if (Path.IsPathRooted(applicationPath) && File.Exists(applicationPath))
+        {
+            return applicationPath;
+        }
+
+        // If it exists in current directory
+        if (File.Exists(applicationPath))
+        {
+            return Path.GetFullPath(applicationPath);
+        }
+
+        // Search in PATH environment variable
+        var pathEnv = Environment.GetEnvironmentVariable("PATH");
+        if (pathEnv != null)
+        {
+            foreach (var path in pathEnv.Split(Path.PathSeparator))
+            {
+                try
+                {
+                    var fullPath = Path.Combine(path, applicationPath);
+                    if (File.Exists(fullPath))
+                    {
+                        return fullPath;
+                    }
+
+                    // Also try with .exe extension if not already present
+                    if (!applicationPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                    {
+                        fullPath = Path.Combine(path, applicationPath + ".exe");
+                        if (File.Exists(fullPath))
+                        {
+                            return fullPath;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Skip invalid paths
+                    continue;
+                }
+            }
+        }
+
+        // Return original path if not found (will fail later with better error)
+        return applicationPath;
+    }
+
+    /// <summary>
     /// Launch a process in the active user session (even when called from a service in Session 0)
     /// </summary>
     public static bool LaunchProcessInUserSession(string applicationPath, string arguments, out string error)
@@ -193,6 +246,15 @@ public static class UserSessionLauncher
 
         try
         {
+            // Resolve the full path to the executable
+            string fullPath = ResolveExecutablePath(applicationPath);
+            
+            if (!File.Exists(fullPath))
+            {
+                error = $"Executable not found: {applicationPath} (resolved to: {fullPath})";
+                return false;
+            }
+
             // Enable required privileges
             EnablePrivilege(SE_INCREASE_QUOTA_NAME);
             EnablePrivilege(SE_ASSIGNPRIMARYTOKEN_NAME);
@@ -245,29 +307,29 @@ public static class UserSessionLauncher
             PROCESS_INFORMATION processInfo;
 
             // For CreateProcessAsUser:
-            // - lpApplicationName should be the full path to the executable
+            // - lpApplicationName must be the FULL path to the executable
             // - lpCommandLine should be null or just the arguments (mutable buffer)
-            // This avoids issues with command line parsing
+            // This avoids issues with command line parsing and PATH resolution
             string? commandLine = string.IsNullOrEmpty(arguments) ? null : arguments;
 
             // Launch the process as the user
             bool result = CreateProcessAsUser(
                 duplicateToken,
-                applicationPath,
+                fullPath,
                 commandLine!,
                 IntPtr.Zero,
                 IntPtr.Zero,
                 false,
                 CREATE_UNICODE_ENVIRONMENT | NORMAL_PRIORITY_CLASS,
                 environmentBlock,
-                Path.GetDirectoryName(applicationPath) ?? string.Empty,
+                Path.GetDirectoryName(fullPath) ?? string.Empty,
                 ref startupInfo,
                 out processInfo);
 
             if (!result)
             {
                 int lastError = Marshal.GetLastWin32Error();
-                error = $"CreateProcessAsUser failed with error code {lastError}: {new Win32Exception(lastError).Message}. App: {applicationPath}, Args: {arguments ?? "(none)"}";
+                error = $"CreateProcessAsUser failed with error code {lastError}: {new Win32Exception(lastError).Message}. App: {fullPath}, Args: {arguments ?? "(none)"}";
                 return false;
             }
 
