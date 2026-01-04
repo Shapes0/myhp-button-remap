@@ -28,8 +28,8 @@ jobs:
     - name: Build Service (Release)
       run: dotnet build HPButtonRemap/HPButtonRemap.csproj --configuration Release --no-restore
       
-    - name: Publish Service (self-contained)
-      run: dotnet publish HPButtonRemap/HPButtonRemap.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish/service
+    - name: Publish Service (framework-dependent)
+      run: dotnet publish HPButtonRemap/HPButtonRemap.csproj --configuration Release --runtime win-x64 --self-contained false --output ./publish/service
       
     - name: Restore Configurator dependencies
       run: dotnet restore HPButtonRemapConfig/HPButtonRemapConfig.csproj
@@ -37,11 +37,11 @@ jobs:
     - name: Build Configurator (Release)
       run: dotnet build HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --no-restore
       
-    - name: Publish Configurator (self-contained)
-      run: dotnet publish HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish/config
+    - name: Publish Configurator (framework-dependent)
+      run: dotnet publish HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --runtime win-x64 --self-contained false --output ./publish/config
       
-    - name: Publish Installer (self-contained)
-      run: dotnet publish Installer/Installer.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish/installer
+    - name: Publish Installer (framework-dependent single file with compression)
+      run: dotnet publish Installer/Installer.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true --output ./publish/installer
       
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -57,12 +57,20 @@ jobs:
         body: |
           # HP Button Remap ${{ github.ref_name }}
           
+          ## Requirements
+          
+          **.NET 8.0 Runtime** is required. Download from: https://dotnet.microsoft.com/download/dotnet/8.0/runtime
+          
+          Most modern Windows 10/11 systems already have this installed.
+          
           ## Installation
           
-          Simply download and run `HPButtonRemap-Installer.exe` - no other files needed!
+          1. Download `HPButtonRemap-Installer.exe` (~66MB single file)
+          2. Run `HPButtonRemap-Installer.exe`
+          3. Click "Install"
           
           The installer will:
-          - Install the tray application to %LOCALAPPDATA%\HPButtonRemap
+          - Install the tray application to %LOCALAPPDATA%\HPButtonRemap (~3MB)
           - Add a shortcut to your Startup folder (auto-start)
           - Add a configurator to your Start Menu
           - Start the application immediately

@@ -30,21 +30,19 @@ This lightweight tray application monitors HP's WMI events (`hpqBEvnt`) and exec
 
 - Windows 10/11
 - HP laptop with special function keys
-- No .NET runtime needed (self-contained executable)
+- **.NET 8.0 Runtime** ([Download here](https://dotnet.microsoft.com/download/dotnet/8.0/runtime) - most modern Windows systems already have this)
 
 ## Installation
 
 **Simple One-Click Installation:**
 
-1. **Download** `HPButtonRemap-Installer.exe` from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
-2. **Double-click** the installer
+1. **Download** `HPButtonRemap-Installer.exe` (~66MB) from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
+2. **Run** the installer
 3. **Click "Install"**
 4. **Done!** The tray icon should appear in your system tray
 
-The installer is a single self-contained executable with everything embedded - no ZIP extraction needed!
-
 The installer will:
-- Install the application to `%LOCALAPPDATA%\HPButtonRemap\`
+- Install the application to `%LOCALAPPDATA%\HPButtonRemap\` (~3MB)
 - Add a shortcut to your Startup folder (auto-start on login)
 - Add "HP Button Remap Configurator" to your Start Menu
 - Start the application immediately

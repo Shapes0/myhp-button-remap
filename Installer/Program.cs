@@ -30,11 +30,11 @@ static class Program
 
 public class InstallerForm : Form
 {
-    private Label statusLabel;
-    private ProgressBar progressBar;
-    private Button installButton;
-    private Button cancelButton;
-    private TextBox logTextBox;
+    private Label statusLabel = null!;
+    private ProgressBar progressBar = null!;
+    private Button installButton = null!;
+    private Button cancelButton = null!;
+    private TextBox logTextBox = null!;
 
     public InstallerForm()
     {
@@ -168,11 +168,8 @@ public class InstallerForm : Form
 
         // Extract embedded resources
         Log("Extracting application files...");
-        ExtractResource("HPButtonRemap.exe", Path.Combine(installDir, "HPButtonRemap.exe"));
-        Log("  - HPButtonRemap.exe");
-        
-        ExtractResource("HPButtonRemapConfig.exe", Path.Combine(installDir, "HPButtonRemapConfig.exe"));
-        Log("  - HPButtonRemapConfig.exe");
+        ExtractAllResources("service", installDir);
+        ExtractAllResources("config", installDir);
 
         string destConfig = Path.Combine(installDir, "config.json");
         if (!File.Exists(destConfig))
@@ -234,6 +231,37 @@ public class InstallerForm : Form
         
         using var fileStream = File.Create(destinationPath);
         stream.CopyTo(fileStream);
+    }
+
+    private void ExtractAllResources(string prefix, string targetDirectory)
+    {
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        var resourcePrefix = $"HPButtonRemapInstaller.Resources.{prefix}.";
+        
+        foreach (var resourceName in assembly.GetManifestResourceNames())
+        {
+            if (resourceName.StartsWith(resourcePrefix))
+            {
+                // Extract relative path from resource name
+                var relativePath = resourceName.Substring(resourcePrefix.Length);
+                var destinationPath = Path.Combine(targetDirectory, relativePath);
+                
+                // Create directory if needed
+                var directory = Path.GetDirectoryName(destinationPath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+                
+                using var stream = assembly.GetManifestResourceStream(resourceName);
+                if (stream != null)
+                {
+                    using var fileStream = File.Create(destinationPath);
+                    stream.CopyTo(fileStream);
+                    Log($"  - {relativePath}");
+                }
+            }
+        }
     }
 
     private void Log(string message)

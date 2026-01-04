@@ -10,11 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\publish\service\HPButtonRemap.exe" Condition="Exists('..\publish\service\HPButtonRemap.exe')">
-      <Link>Resources\HPButtonRemap.exe</Link>
+    <EmbeddedResource Include="..\publish\service\**\*.*" Condition="Exists('..\publish\service')">
+      <Link>Resources\service\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\publish\config\HPButtonRemapConfig.exe" Condition="Exists('..\publish\config\HPButtonRemapConfig.exe')">
-      <Link>Resources\HPButtonRemapConfig.exe</Link>
+    <EmbeddedResource Include="..\publish\config\**\*.*" Condition="Exists('..\publish\config')">
+      <Link>Resources\config\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\config.json">
       <Link>Resources\config.json</Link>
