@@ -189,7 +189,7 @@ public class TrayApplicationContext : ApplicationContext
                 MessageBox.Show("Configurator not found. Please use 'Open Configuration' to edit manually.", 
                     "HP Button Remap", 
                     MessageBoxButtons.OK, 
-                    ToolTipIcon.Warning);
+                    MessageBoxIcon.Warning);
             }
         }
         catch (Exception ex)
