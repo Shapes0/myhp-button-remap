@@ -249,7 +249,7 @@ This will:
 - Check for any error messages during build
 
 ### Permission errors
-- Ensure you ran `Install-Native.ps1` as Administrator
+- Ensure you ran `Install.ps1` as Administrator
 - The scheduled task needs to run with your user account
 - For SendKeys actions, the application needs to be in the foreground context
 
