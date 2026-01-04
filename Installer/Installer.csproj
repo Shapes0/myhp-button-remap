@@ -16,7 +16,7 @@
     <EmbeddedResource Include="..\publish\config\**\*.*" Condition="Exists('..\publish\config')">
       <Link>Resources\config\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\config.json">
+    <EmbeddedResource Include="..\config.json" Condition="Exists('..\config.json')">
       <Link>Resources\config.json</Link>
     </EmbeddedResource>
   </ItemGroup>
