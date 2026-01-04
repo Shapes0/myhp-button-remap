@@ -11,6 +11,9 @@ x86/
 bld/
 [Bb]ld/
 
+# Generated helper scripts
+HPButtonRemap-Hidden.vbs
+
 # Visual Studio cache/options
 .vs/
 *.suo

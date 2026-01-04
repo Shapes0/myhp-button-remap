@@ -37,16 +37,19 @@ This native Windows application monitors HP's WMI events (`hpqBEvnt` in the `roo
 
 ## Quick Start
 
-### Option 1: Using Pre-built Binary (Recommended)
+### Using Pre-built Binary (Recommended)
 
 1. **Download the latest release** from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
 2. **Extract the ZIP file** to a folder of your choice
 3. **Edit** `config.json` to set your desired actions (see examples below)
-4. **Right-click** `Install.ps1` and select **"Run with PowerShell"**
-5. Accept the UAC prompt
-6. The application will start automatically at next logon, or run: `Start-ScheduledTask -TaskName "HP-Button-Remap"`
+4. **Choose installation method:**
+   - **Simple (No Admin):** Right-click `Install-Startup.ps1` and select **"Run with PowerShell"**
+   - **Advanced (Requires Admin):** Right-click `Install.ps1` and select **"Run with PowerShell"** and accept the UAC prompt
+5. The application will start automatically at next logon
 
-### Option 2: Building from Source
+See the **Installation** section below for details on each method.
+
+### Building from Source
 
 If you want to build from source instead of using the prebuilt binary:
 
@@ -221,24 +224,50 @@ Note: Most HP laptops only have one special button (EventID 29, EventData 8616).
 
 ## Installation
 
+There are two installation methods available:
+
+### Method 1: Startup Folder (Recommended - No Admin Required)
+
+Right-click `Install-Startup.ps1` and select **"Run with PowerShell"**
+
+**Advantages:**
+- ✅ No administrator privileges required
+- ✅ Simpler setup - just a shortcut in your Startup folder
+- ✅ Easy to remove - just delete the shortcut
+- ✅ Runs hidden in the background (no console window)
+
+**How it works:**
+- Creates a VBS script to run the app without a console window
+- Places a shortcut in your Startup folder
+- Starts automatically when you log in
+
+**To uninstall:** Right-click `Uninstall-Startup.ps1` and select **"Run with PowerShell"**
+
+### Method 2: Scheduled Task (Advanced - Requires Admin)
+
 Right-click `Install.ps1` and select **"Run with PowerShell"**
 
-The installer will:
-- Build the application if needed
-- Create a scheduled task that runs at logon
-- Configure the task to restart automatically if it crashes
+**Advantages:**
+- ✅ Automatic restart if the application crashes
+- ✅ More robust for critical applications
+- ✅ Centralized management in Task Scheduler
 
-## Uninstallation
+**How it works:**
+- Creates a scheduled task that runs at logon
+- Configured to restart on failure (up to 3 times)
+- Requires administrator privileges to install
 
-Right-click `Uninstall.ps1` and select **"Run with PowerShell"**
-
-This will:
-- Stop any running instances
-- Remove the scheduled task
+**To uninstall:** Right-click `Uninstall.ps1` and select **"Run with PowerShell"**
 
 ## Troubleshooting
 
-### Application not starting
+### Application not starting (Startup Folder method)
+- Check if the shortcut exists in your Startup folder: `shell:startup`
+- Look for `HPButtonRemap-Hidden.vbs` in the application directory
+- Try running the VBS script manually to see if there are errors
+- Check Task Manager for running `HPButtonRemap.exe` process
+
+### Application not starting (Scheduled Task method)
 - Open Task Scheduler (`taskschd.msc`)
 - Find "HP-Button-Remap" task
 - Check the "History" tab for errors

@@ -38,6 +38,8 @@ jobs:
         Copy-Item LICENSE release/
         Copy-Item Install.ps1 release/
         Copy-Item Uninstall.ps1 release/
+        Copy-Item Install-Startup.ps1 release/
+        Copy-Item Uninstall-Startup.ps1 release/
         Compress-Archive -Path release/* -DestinationPath HPButtonRemap-${{ github.ref_name }}.zip
       shell: pwsh
       
