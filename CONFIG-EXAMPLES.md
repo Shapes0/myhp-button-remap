@@ -2,12 +2,39 @@
 
 This file contains various configuration examples for different action types.
 
+## Configuration Options
+
+All configurations support these optional settings:
+
+- `ShowStartupNotification` (true/false) - Show a balloon notification when the tray app starts displaying the number of monitored actions. Set to `false` if you find this annoying.
+
 ## Basic Configuration (Default)
 
 Launch Notepad when F11 button is pressed:
 
 ```json
 {
+  "ShowStartupNotification": true,
+  "ButtonActions": [
+    {
+      "Name": "F11 Key - Launch Notepad",
+      "EventID": 29,
+      "EventData": 8616,
+      "Type": "LaunchApp",
+      "LaunchPath": "notepad.exe",
+      "LaunchArguments": ""
+    }
+  ]
+}
+```
+
+## Without Startup Notification
+
+Disable the startup notification balloon:
+
+```json
+{
+  "ShowStartupNotification": false,
   "ButtonActions": [
     {
       "Name": "F11 Key - Launch Notepad",
@@ -27,6 +54,7 @@ Open a specific file with Notepad:
 
 ```json
 {
+  "ShowStartupNotification": true,
   "ButtonActions": [
     {
       "Name": "F11 Key - Open Notes File",
@@ -46,6 +74,7 @@ Open your favorite website:
 
 ```json
 {
+  "ShowStartupNotification": true,
   "ButtonActions": [
     {
       "Name": "F11 Key - Open Google",
@@ -64,6 +93,7 @@ Reopen last closed browser tab (Ctrl+Shift+T):
 
 ```json
 {
+  "ShowStartupNotification": true,
   "ButtonActions": [
     {
       "Name": "F11 Key - Reopen Tab",
@@ -80,6 +110,7 @@ More keyboard shortcut examples:
 
 ```json
 {
+  "ShowStartupNotification": true,
   "ButtonActions": [
     {
       "Name": "F11 Key - Copy",
@@ -94,6 +125,7 @@ More keyboard shortcut examples:
 
 ```json
 {
+  "ShowStartupNotification": true,
   "ButtonActions": [
     {
       "Name": "F11 Key - Show Desktop",
@@ -108,6 +140,7 @@ More keyboard shortcut examples:
 
 ```json
 {
+  "ShowStartupNotification": true,
   "ButtonActions": [
     {
       "Name": "F11 Key - Task Manager",
@@ -126,6 +159,7 @@ If you have multiple special buttons on your HP laptop with different EventIDs:
 
 ```json
 {
+  "ShowStartupNotification": true,
   "ButtonActions": [
     {
       "Name": "F11 Button - Browser",

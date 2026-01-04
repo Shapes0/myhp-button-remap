@@ -3,7 +3,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Diagnostics;
-using System.ServiceProcess;
 using Newtonsoft.Json;
 using HPButtonRemap;
 
@@ -12,6 +11,7 @@ namespace HPButtonRemapConfig
     public partial class MainWindow : Window
     {
         private ObservableCollection<ButtonAction> _actions = new();
+        private bool _showStartupNotification = true;
         private string ConfigPath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
             "HPButtonRemap",
@@ -50,6 +50,8 @@ namespace HPButtonRemapConfig
                         {
                             _actions.Add(action);
                         }
+                        _showStartupNotification = config.ShowStartupNotification;
+                        ShowStartupNotificationCheckBox.IsChecked = _showStartupNotification;
                     }
                 }
                 else
@@ -64,6 +66,7 @@ namespace HPButtonRemapConfig
                         LaunchPath = "notepad.exe",
                         LaunchArguments = ""
                     });
+                    ShowStartupNotificationCheckBox.IsChecked = true;
                 }
             }
             catch (Exception ex)
@@ -76,7 +79,11 @@ namespace HPButtonRemapConfig
         {
             try
             {
-                var config = new Config { ButtonActions = new List<ButtonAction>(_actions) };
+                var config = new Config 
+                { 
+                    ButtonActions = new List<ButtonAction>(_actions),
+                    ShowStartupNotification = _showStartupNotification
+                };
                 var json = JsonConvert.SerializeObject(config, Formatting.Indented);
 
                 // Try to save to Program Files, fall back to Local AppData
@@ -97,7 +104,7 @@ namespace HPButtonRemapConfig
                     File.WriteAllText(targetPath, json);
                 }
 
-                MessageBox.Show($"Configuration saved successfully to:\n{targetPath}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Configuration saved successfully to:\n{targetPath}\n\nNote: To apply changes, use 'Reload Configuration' from the tray icon menu.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -105,30 +112,9 @@ namespace HPButtonRemapConfig
             }
         }
 
-        private void ServiceButton_Click(object sender, RoutedEventArgs e)
+        private void ShowStartupNotificationCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                using (var service = new ServiceController("HP Button Remap Service"))
-                {
-                    if (service.Status == ServiceControllerStatus.Running)
-                    {
-                        service.Stop();
-                        service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
-                        service.Start();
-                        MessageBox.Show("Service restarted successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        service.Start();
-                        MessageBox.Show("Service started successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error controlling service: {ex.Message}\n\nPlease restart manually from Services.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
+            _showStartupNotification = ShowStartupNotificationCheckBox.IsChecked ?? true;
         }
 
         private void ActionsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

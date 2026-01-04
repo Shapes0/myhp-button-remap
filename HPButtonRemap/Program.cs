@@ -19,6 +19,7 @@ public class TrayApplicationContext : ApplicationContext
     private NotifyIcon _trayIcon;
     private WmiEventMonitor? _monitor;
     private ActionExecutor _executor;
+    private Config? _currentConfig;
     private static readonly string ConfigPath = Path.Combine(
         AppDomain.CurrentDomain.BaseDirectory,
         "config.json"
@@ -77,6 +78,8 @@ public class TrayApplicationContext : ApplicationContext
         try
         {
             var config = LoadConfiguration();
+            _currentConfig = config;
+            
             if (config == null || config.ButtonActions.Count == 0)
             {
                 _trayIcon.ShowBalloonTip(5000, "HP Button Remap", 
@@ -89,9 +92,12 @@ public class TrayApplicationContext : ApplicationContext
             _monitor = new WmiEventMonitor(_executor);
             _monitor.StartMonitoring(config);
 
-            _trayIcon.ShowBalloonTip(2000, "HP Button Remap", 
-                $"Monitoring {config.ButtonActions.Count} button action(s)", 
-                ToolTipIcon.Info);
+            if (config.ShowStartupNotification)
+            {
+                _trayIcon.ShowBalloonTip(2000, "HP Button Remap", 
+                    $"Monitoring {config.ButtonActions.Count} button action(s)", 
+                    ToolTipIcon.Info);
+            }
         }
         catch (Exception ex)
         {
@@ -130,6 +136,7 @@ public class TrayApplicationContext : ApplicationContext
     {
         var sampleConfig = new Config
         {
+            ShowStartupNotification = true,
             ButtonActions = new List<ButtonAction>
             {
                 new ButtonAction
@@ -208,9 +215,14 @@ public class TrayApplicationContext : ApplicationContext
 
     private void ShowAbout()
     {
+        string statusText = _currentConfig != null && _currentConfig.ButtonActions.Count > 0
+            ? $"Status: Monitoring {_currentConfig.ButtonActions.Count} button action(s)"
+            : "Status: No actions configured";
+
         MessageBox.Show(
             "HP Button Remap\n\n" +
             "Monitors HP laptop special function keys and executes configured actions.\n\n" +
+            statusText + "\n\n" +
             "Configuration: " + ConfigPath + "\n\n" +
             "Right-click the tray icon to access options.",
             "About HP Button Remap",

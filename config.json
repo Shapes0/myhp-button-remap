@@ -1,4 +1,5 @@
 {
+  "ShowStartupNotification": true,
   "ButtonActions": [
     {
       "Name": "F11 Key - Launch Notepad",

@@ -9,6 +9,7 @@ namespace HPButtonRemap;
 public class Config
 {
     public List<ButtonAction> ButtonActions { get; set; } = new();
+    public bool ShowStartupNotification { get; set; } = true;
 }
 
 /// <summary>

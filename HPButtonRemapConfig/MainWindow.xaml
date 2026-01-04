@@ -54,10 +54,15 @@
         </Border>
 
         <!-- Bottom Buttons -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button x:Name="SaveButton" Content="Save Configuration" Width="150" Margin="5,0" Click="SaveButton_Click" Height="30"/>
-            <Button x:Name="ServiceButton" Content="Restart Service" Width="150" Margin="5,0" Click="ServiceButton_Click" Height="30"/>
-            <Button x:Name="CloseButton" Content="Close" Width="100" Margin="5,0" Click="CloseButton_Click" Height="30"/>
+        <StackPanel Grid.Row="2" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+                <CheckBox x:Name="ShowStartupNotificationCheckBox" Content="Show startup notification" VerticalAlignment="Center" Checked="ShowStartupNotificationCheckBox_Changed" Unchecked="ShowStartupNotificationCheckBox_Changed"/>
+                <TextBlock Text="(Displays number of monitored actions when tray app starts)" Foreground="Gray" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="SaveButton" Content="Save Configuration" Width="150" Margin="5,0" Click="SaveButton_Click" Height="30"/>
+                <Button x:Name="CloseButton" Content="Close" Width="100" Margin="5,0" Click="CloseButton_Click" Height="30"/>
+            </StackPanel>
         </StackPanel>
     </Grid>
 </Window>
