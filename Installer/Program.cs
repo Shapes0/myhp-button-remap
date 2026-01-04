@@ -226,7 +226,9 @@ public class InstallerForm : Form
         using var stream = assembly.GetManifestResourceStream(resourcePath);
         if (stream == null)
         {
-            throw new FileNotFoundException($"Embedded resource not found: {resourceName}");
+            // List all available resources for debugging
+            var allResources = string.Join("\n  ", assembly.GetManifestResourceNames());
+            throw new FileNotFoundException($"Embedded resource not found: {resourceName}\n\nLooking for: {resourcePath}\n\nAvailable resources:\n  {allResources}");
         }
         
         using var fileStream = File.Create(destinationPath);
