@@ -40,9 +40,6 @@ jobs:
     - name: Publish Configurator (self-contained)
       run: dotnet publish HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish/config
       
-    - name: Restore Installer dependencies
-      run: dotnet restore Installer/Installer.csproj
-      
     - name: Publish Installer (self-contained)
       run: dotnet publish Installer/Installer.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish/installer
       

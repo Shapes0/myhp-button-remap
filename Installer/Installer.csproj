@@ -9,10 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\publish\service\HPButtonRemap.exe">
+    <EmbeddedResource Include="..\publish\service\HPButtonRemap.exe" Condition="Exists('..\publish\service\HPButtonRemap.exe')">
       <Link>Resources\HPButtonRemap.exe</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\publish\config\HPButtonRemapConfig.exe">
+    <EmbeddedResource Include="..\publish\config\HPButtonRemapConfig.exe" Condition="Exists('..\publish\config\HPButtonRemapConfig.exe')">
       <Link>Resources\HPButtonRemapConfig.exe</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\config.json">
