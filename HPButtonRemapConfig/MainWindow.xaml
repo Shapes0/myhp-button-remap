@@ -1,0 +1,64 @@
+﻿<Window x:Class="HPButtonRemapConfig.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="HP Button Remap Configurator" Height="550" Width="800"
+        WindowStartupLocation="CenterScreen"
+        Icon="icon.ico">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="HP Button Remap Configuration" FontSize="20" FontWeight="Bold"/>
+            <TextBlock Text="Configure actions for your HP laptop button" Foreground="Gray" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <!-- Button Actions List -->
+        <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Padding="5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <ListBox x:Name="ActionsListBox" Grid.Row="0" SelectionChanged="ActionsListBox_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="5">
+                                <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                <TextBlock>
+                                    <Run Text="Type: "/>
+                                    <Run Text="{Binding Type}" Foreground="Blue"/>
+                                    <Run Text=" | EventID: "/>
+                                    <Run Text="{Binding EventID}"/>
+                                    <Run Text=" | EventData: "/>
+                                    <Run Text="{Binding EventData}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
+                    <Button x:Name="AddButton" Content="Add" Width="80" Margin="5,0" Click="AddButton_Click"/>
+                    <Button x:Name="EditButton" Content="Edit" Width="80" Margin="5,0" Click="EditButton_Click" IsEnabled="False"/>
+                    <Button x:Name="DeleteButton" Content="Delete" Width="80" Margin="5,0" Click="DeleteButton_Click" IsEnabled="False"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Bottom Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="SaveButton" Content="Save Configuration" Width="150" Margin="5,0" Click="SaveButton_Click" Height="30"/>
+            <Button x:Name="ServiceButton" Content="Restart Service" Width="150" Margin="5,0" Click="ServiceButton_Click" Height="30"/>
+            <Button x:Name="CloseButton" Content="Close" Width="100" Margin="5,0" Click="CloseButton_Click" Height="30"/>
+        </StackPanel>
+    </Grid>
+</Window>

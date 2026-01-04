@@ -18,42 +18,42 @@ public class ActionExecutor
     /// <summary>
     /// Execute an action based on its configuration
     /// </summary>
-    public void ExecuteAction(ButtonAction action)
+    public void ExecuteAction(ButtonAction action, Microsoft.Extensions.Logging.ILogger logger)
     {
         try
         {
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Executing action: {action.Name} (Type: {action.Type})");
+            logger.LogInformation("Executing action: {ActionName} (Type: {ActionType})", action.Name, action.Type);
             
             switch (action.Type)
             {
                 case ActionType.LaunchApp:
-                    LaunchApplication(action);
+                    LaunchApplication(action, logger);
                     break;
                 case ActionType.OpenWebsite:
-                    OpenWebsite(action);
+                    OpenWebsite(action, logger);
                     break;
                 case ActionType.SendKeys:
-                    SendKeyCombo(action);
+                    SendKeyCombo(action, logger);
                     break;
                 default:
-                    Console.WriteLine($"[ERROR] Unknown action type: {action.Type}");
+                    logger.LogError("Unknown action type: {ActionType}", action.Type);
                     break;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to execute action '{action.Name}': {ex.Message}");
+            logger.LogError(ex, "Failed to execute action '{ActionName}'", action.Name);
         }
     }
 
     /// <summary>
     /// Launch an application with optional arguments
     /// </summary>
-    private void LaunchApplication(ButtonAction action)
+    private void LaunchApplication(ButtonAction action, Microsoft.Extensions.Logging.ILogger logger)
     {
         if (string.IsNullOrEmpty(action.LaunchPath))
         {
-            Console.WriteLine("[ERROR] LaunchPath is not specified");
+            logger.LogError("LaunchPath is not specified");
             return;
         }
 
@@ -65,17 +65,17 @@ public class ActionExecutor
         };
 
         Process.Start(startInfo);
-        Console.WriteLine($"[OK] Launched: {action.LaunchPath} {action.LaunchArguments}");
+        logger.LogInformation("Launched: {LaunchPath} {LaunchArguments}", action.LaunchPath, action.LaunchArguments);
     }
 
     /// <summary>
     /// Open a website in the default browser
     /// </summary>
-    private void OpenWebsite(ButtonAction action)
+    private void OpenWebsite(ButtonAction action, Microsoft.Extensions.Logging.ILogger logger)
     {
         if (string.IsNullOrEmpty(action.WebsiteUrl))
         {
-            Console.WriteLine("[ERROR] WebsiteUrl is not specified");
+            logger.LogError("WebsiteUrl is not specified");
             return;
         }
 
@@ -86,17 +86,17 @@ public class ActionExecutor
         };
 
         Process.Start(startInfo);
-        Console.WriteLine($"[OK] Opened website: {action.WebsiteUrl}");
+        logger.LogInformation("Opened website: {WebsiteUrl}", action.WebsiteUrl);
     }
 
     /// <summary>
     /// Send keyboard shortcut (e.g., "Ctrl+Shift+T")
     /// </summary>
-    private void SendKeyCombo(ButtonAction action)
+    private void SendKeyCombo(ButtonAction action, Microsoft.Extensions.Logging.ILogger logger)
     {
         if (string.IsNullOrEmpty(action.KeyCombo))
         {
-            Console.WriteLine("[ERROR] KeyCombo is not specified");
+            logger.LogError("KeyCombo is not specified");
             return;
         }
 
@@ -111,7 +111,7 @@ public class ActionExecutor
             }
             else
             {
-                Console.WriteLine($"[ERROR] Unknown key: {key}");
+                logger.LogError("Unknown key: {Key}", key);
                 return;
             }
         }
@@ -128,7 +128,7 @@ public class ActionExecutor
             keybd_event(virtualKeys[i], 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, UIntPtr.Zero);
         }
 
-        Console.WriteLine($"[OK] Sent key combo: {action.KeyCombo}");
+        logger.LogInformation("Sent key combo: {KeyCombo}", action.KeyCombo);
     }
 
     /// <summary>

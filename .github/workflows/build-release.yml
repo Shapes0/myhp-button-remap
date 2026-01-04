@@ -19,27 +19,35 @@ jobs:
       with:
         dotnet-version: '8.0.x'
         
-    - name: Restore dependencies
+    - name: Restore Service dependencies
       run: dotnet restore HPButtonRemap/HPButtonRemap.csproj
       
-    - name: Build Release
+    - name: Build Service (Release)
       run: dotnet build HPButtonRemap/HPButtonRemap.csproj --configuration Release --no-restore
       
-    - name: Publish self-contained executable
-      run: dotnet publish HPButtonRemap/HPButtonRemap.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish
+    - name: Publish Service (self-contained)
+      run: dotnet publish HPButtonRemap/HPButtonRemap.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish/service
+      
+    - name: Restore Configurator dependencies
+      run: dotnet restore HPButtonRemapConfig/HPButtonRemapConfig.csproj
+      
+    - name: Build Configurator (Release)
+      run: dotnet build HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --no-restore
+      
+    - name: Publish Configurator (self-contained)
+      run: dotnet publish HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish/config
       
     - name: Create release package
       run: |
         mkdir release
-        Copy-Item publish/HPButtonRemap.exe release/
+        Copy-Item publish/service/HPButtonRemap.exe release/
+        Copy-Item publish/config/HPButtonRemapConfig.exe release/
         Copy-Item config.json release/
         Copy-Item CONFIG-EXAMPLES.md release/
         Copy-Item README.md release/
         Copy-Item LICENSE release/
-        Copy-Item Install.ps1 release/
-        Copy-Item Uninstall.ps1 release/
-        Copy-Item Install-Startup.ps1 release/
-        Copy-Item Uninstall-Startup.ps1 release/
+        Copy-Item Install-Service.ps1 release/
+        Copy-Item Uninstall-Service.ps1 release/
         Compress-Archive -Path release/* -DestinationPath HPButtonRemap-${{ github.ref_name }}.zip
       shell: pwsh
       

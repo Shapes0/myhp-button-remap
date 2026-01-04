@@ -1,4 +1,5 @@
 using System.Management;
+using Microsoft.Extensions.Logging;
 
 namespace HPButtonRemap;
 
@@ -8,12 +9,14 @@ namespace HPButtonRemap;
 public class WmiEventMonitor : IDisposable
 {
     private readonly ActionExecutor _executor;
+    private readonly ILogger _logger;
     private readonly List<ManagementEventWatcher> _watchers = new();
     private bool _disposed;
 
-    public WmiEventMonitor(ActionExecutor executor)
+    public WmiEventMonitor(ActionExecutor executor, ILogger logger)
     {
         _executor = executor;
+        _logger = logger;
     }
 
     /// <summary>
@@ -21,7 +24,7 @@ public class WmiEventMonitor : IDisposable
     /// </summary>
     public void StartMonitoring(Config config)
     {
-        Console.WriteLine("Starting HP WMI Event Monitor...");
+        _logger.LogInformation("Starting HP WMI Event Monitor...");
 
         foreach (var action in config.ButtonActions)
         {
@@ -31,17 +34,17 @@ public class WmiEventMonitor : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Failed to register action '{action.Name}': {ex.Message}");
+                _logger.LogError(ex, "Failed to register action '{ActionName}'", action.Name);
             }
         }
 
         if (_watchers.Count == 0)
         {
-            Console.WriteLine("[WARNING] No event handlers registered!");
+            _logger.LogWarning("No event handlers registered!");
         }
         else
         {
-            Console.WriteLine($"[OK] Monitoring {_watchers.Count} button action(s)");
+            _logger.LogInformation("Monitoring {Count} button action(s)", _watchers.Count);
         }
     }
 
@@ -72,7 +75,8 @@ public class WmiEventMonitor : IDisposable
         watcher.Start();
         _watchers.Add(watcher);
 
-        Console.WriteLine($"[OK] Registered: {action.Name} (EventID: {action.EventID}, EventData: {action.EventData})");
+        _logger.LogInformation("Registered: {ActionName} (EventID: {EventID}, EventData: {EventData})", 
+            action.Name, action.EventID, action.EventData);
     }
 
     /// <summary>
@@ -83,11 +87,11 @@ public class WmiEventMonitor : IDisposable
         try
         {
             // Execute the configured action
-            _executor.ExecuteAction(action);
+            _executor.ExecuteAction(action, _logger);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Event handler error for '{action.Name}': {ex.Message}");
+            _logger.LogError(ex, "Event handler error for '{ActionName}'", action.Name);
         }
     }
 
@@ -96,7 +100,7 @@ public class WmiEventMonitor : IDisposable
     /// </summary>
     public void StopMonitoring()
     {
-        Console.WriteLine("Stopping HP WMI Event Monitor...");
+        _logger.LogInformation("Stopping HP WMI Event Monitor...");
 
         foreach (var watcher in _watchers)
         {
@@ -107,12 +111,12 @@ public class WmiEventMonitor : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Failed to stop watcher: {ex.Message}");
+                _logger.LogError(ex, "Failed to stop watcher");
             }
         }
 
         _watchers.Clear();
-        Console.WriteLine("[OK] Monitoring stopped");
+        _logger.LogInformation("Monitoring stopped");
     }
 
     public void Dispose()

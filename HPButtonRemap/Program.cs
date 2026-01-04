@@ -1,112 +1,108 @@
 ﻿using HPButtonRemap;
-using Newtonsoft.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-class Program
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddWindowsService(options =>
 {
-    private static WmiEventMonitor? _monitor;
+    options.ServiceName = "HP Button Remap Service";
+});
+
+builder.Services.AddHostedService<HPButtonRemapService>();
+builder.Services.AddSingleton<ActionExecutor>();
+
+var host = builder.Build();
+await host.RunAsync();
+
+public class HPButtonRemapService : BackgroundService
+{
+    private readonly ILogger<HPButtonRemapService> _logger;
+    private readonly ActionExecutor _executor;
+    private WmiEventMonitor? _monitor;
     private static readonly string ConfigPath = Path.Combine(
         AppDomain.CurrentDomain.BaseDirectory,
         "config.json"
     );
 
-    static void Main(string[] args)
+    public HPButtonRemapService(ILogger<HPButtonRemapService> logger, ActionExecutor executor)
     {
-        Console.WriteLine("=== HP Button Remap - Native Windows Application ===");
-        Console.WriteLine();
+        _logger = logger;
+        _executor = executor;
+    }
 
-        // Load configuration
-        var config = LoadConfiguration();
-        if (config == null || config.ButtonActions.Count == 0)
-        {
-            Console.WriteLine("[ERROR] No valid button actions configured");
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
-            return;
-        }
-
-        // Set up console cancellation handler
-        Console.CancelKeyPress += (sender, e) =>
-        {
-            e.Cancel = true;
-            Console.WriteLine();
-            Console.WriteLine("Shutdown requested...");
-            _monitor?.Dispose();
-            Environment.Exit(0);
-        };
-
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
         try
         {
-            // Create executor and monitor
-            var executor = new ActionExecutor();
-            _monitor = new WmiEventMonitor(executor);
+            _logger.LogInformation("HP Button Remap Service starting...");
+
+            // Load configuration
+            var config = LoadConfiguration();
+            if (config == null || config.ButtonActions.Count == 0)
+            {
+                _logger.LogError("No valid button actions configured");
+                return;
+            }
 
             // Start monitoring
+            _monitor = new WmiEventMonitor(_executor, _logger);
             _monitor.StartMonitoring(config);
 
-            Console.WriteLine();
-            Console.WriteLine("=== Monitoring Active ===");
-            Console.WriteLine("Press Ctrl+C to stop");
-            Console.WriteLine();
+            _logger.LogInformation("HP Button Remap Service is running");
 
-            // Keep running
-            while (true)
-            {
-                Thread.Sleep(1000);
-            }
+            // Keep service running until cancellation
+            await Task.Delay(Timeout.Infinite, stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Service is stopping...");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Fatal error: {ex.Message}");
-            Console.WriteLine();
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
-        }
-        finally
-        {
-            _monitor?.Dispose();
+            _logger.LogError(ex, "Fatal error in service");
+            throw;
         }
     }
 
-    /// <summary>
-    /// Load configuration from JSON file
-    /// </summary>
-    private static Config? LoadConfiguration()
+    public override Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("HP Button Remap Service stopping...");
+        _monitor?.Dispose();
+        return base.StopAsync(cancellationToken);
+    }
+
+    private Config? LoadConfiguration()
     {
         try
         {
             if (!File.Exists(ConfigPath))
             {
-                Console.WriteLine($"[ERROR] Configuration file not found: {ConfigPath}");
-                Console.WriteLine("Creating sample configuration...");
+                _logger.LogError("Configuration file not found: {ConfigPath}", ConfigPath);
                 CreateSampleConfig();
-                Console.WriteLine($"[OK] Sample config created at: {ConfigPath}");
-                Console.WriteLine("Please edit the configuration file and restart the application");
                 return null;
             }
 
             var json = File.ReadAllText(ConfigPath);
-            var config = JsonConvert.DeserializeObject<Config>(json);
+            var config = Newtonsoft.Json.JsonConvert.DeserializeObject<Config>(json);
 
             if (config == null)
             {
-                Console.WriteLine("[ERROR] Failed to parse configuration file");
+                _logger.LogError("Failed to parse configuration file");
                 return null;
             }
 
-            Console.WriteLine($"[OK] Configuration loaded: {config.ButtonActions.Count} action(s)");
+            _logger.LogInformation("Configuration loaded: {Count} action(s)", config.ButtonActions.Count);
             return config;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to load configuration: {ex.Message}");
+            _logger.LogError(ex, "Failed to load configuration");
             return null;
         }
     }
 
-    /// <summary>
-    /// Create a sample configuration file
-    /// </summary>
-    private static void CreateSampleConfig()
+    private void CreateSampleConfig()
     {
         var sampleConfig = new Config
         {
@@ -124,10 +120,8 @@ class Program
             }
         };
 
-        var json = JsonConvert.SerializeObject(sampleConfig, Formatting.Indented);
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(sampleConfig, Newtonsoft.Json.Formatting.Indented);
         File.WriteAllText(ConfigPath, json);
-        
-        Console.WriteLine();
-        Console.WriteLine("Sample configuration created. See CONFIG-EXAMPLES.md for more examples.");
+        _logger.LogInformation("Sample configuration created at: {ConfigPath}", ConfigPath);
     }
 }
