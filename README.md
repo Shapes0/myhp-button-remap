@@ -1,6 +1,6 @@
 # HP Button Remap
 
-Lightweight tray application for remapping HP laptop special function keys.
+Lightweight tray application for remapping HP laptop special function keys (MyHP/HP System Event Utility/HP Programmable Key). Tested on an HP OmniBook, YMMV on other models. This is a vibe coded app, use at your own risk.
 
 ## Overview
 
