@@ -14,7 +14,7 @@ Write-Host ""
 
 # Get script directory
 $scriptDir = $PSScriptRoot
-$appPath = Join-Path $scriptDir "HPButtonRemap\bin\Debug\net8.0-windows\HPButtonRemap.exe"
+$appPath = Join-Path $scriptDir "HPButtonRemap\bin\Release\net8.0-windows\HPButtonRemap.exe"
 $configFile = Join-Path $scriptDir "config.json"
 
 # Check if we need to build first
@@ -22,7 +22,7 @@ if (-not (Test-Path $appPath)) {
     Write-Host "[INFO] Application not found. Building..." -ForegroundColor Yellow
     Push-Location (Join-Path $scriptDir "HPButtonRemap")
     try {
-        dotnet build --configuration Debug
+        dotnet build --configuration Release
         if ($LASTEXITCODE -ne 0) {
             throw "Build failed"
         }

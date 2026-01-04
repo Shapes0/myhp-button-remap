@@ -1,8 +1,6 @@
 ﻿using HPButtonRemap;
 using Newtonsoft.Json;
 
-namespace HPButtonRemap;
-
 class Program
 {
     private static WmiEventMonitor? _monitor;
