@@ -20,15 +20,13 @@ public class TrayApplicationContext : ApplicationContext
     private WmiEventMonitor? _monitor;
     private ActionExecutor _executor;
     private Config? _currentConfig;
+    private Thread? _ipcListenerThread;
+    private volatile bool _shouldExit = false;
     private static readonly string ConfigPath = Path.Combine(
         AppDomain.CurrentDomain.BaseDirectory,
         "config.json"
     );
-    private static readonly string ReloadSignalFile = Path.Combine(
-        Path.GetTempPath(),
-        "HPButtonRemap_Reload.signal"
-    );
-    private System.Threading.Timer? _signalCheckTimer;
+    private const string IPC_EVENT_NAME = "HPButtonRemap_ReloadConfig";
 
     public TrayApplicationContext()
     {
@@ -46,33 +44,45 @@ public class TrayApplicationContext : ApplicationContext
         // Load config and start monitoring
         StartMonitoring();
         
-        // Set up periodic check for reload signal (every 1 second)
-        _signalCheckTimer = new System.Threading.Timer(_ => CheckForReloadSignal(), 
-            null, 1000, 1000);
+        // Set up IPC listener for reload signals from configurator
+        StartIpcListener();
     }
     
-    private void CheckForReloadSignal()
+    private void StartIpcListener()
     {
-        try
+        _ipcListenerThread = new Thread(() =>
         {
-            if (File.Exists(ReloadSignalFile))
+            while (!_shouldExit)
             {
-                File.Delete(ReloadSignalFile);
-                
-                // Use invoke to run on UI thread
-                if (_trayIcon.ContextMenuStrip != null)
+                try
                 {
-                    _trayIcon.ContextMenuStrip.Invoke(new Action(() =>
+                    using (var reloadEvent = new EventWaitHandle(false, EventResetMode.AutoReset, IPC_EVENT_NAME))
                     {
-                        ReloadConfiguration();
-                    }));
+                        // Wait for signal with timeout so we can check _shouldExit periodically
+                        if (reloadEvent.WaitOne(1000))
+                        {
+                            // Signal received - reload configuration on UI thread
+                            if (_trayIcon.ContextMenuStrip != null && !_shouldExit)
+                            {
+                                _trayIcon.ContextMenuStrip.Invoke(new Action(() =>
+                                {
+                                    ReloadConfiguration();
+                                }));
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // If event creation fails, wait a bit and retry
+                    Thread.Sleep(1000);
                 }
             }
-        }
-        catch
+        })
         {
-            // Silently ignore errors checking for signal
-        }
+            IsBackground = true
+        };
+        _ipcListenerThread.Start();
     }
 
     private ContextMenuStrip CreateContextMenu()
@@ -363,6 +373,7 @@ del ""{batchPath}""
 
     private void Exit()
     {
+        _shouldExit = true;
         _monitor?.Dispose();
         _trayIcon.Visible = false;
         Application.Exit();
@@ -372,8 +383,10 @@ del ""{batchPath}""
     {
         if (disposing)
         {
+            _shouldExit = true;
             _monitor?.Dispose();
             _trayIcon?.Dispose();
+            _ipcListenerThread?.Join(2000); // Wait up to 2 seconds for thread to exit
         }
         base.Dispose(disposing);
     }

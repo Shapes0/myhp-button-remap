@@ -96,13 +96,17 @@ namespace HPButtonRemapConfig
         {
             try
             {
-                // Create a signal file that the tray app checks for
-                string signalFile = Path.Combine(Path.GetTempPath(), "HPButtonRemap_Reload.signal");
-                File.WriteAllText(signalFile, DateTime.Now.ToString());
+                // Signal the tray app using a named event
+                using (var reloadEvent = new System.Threading.EventWaitHandle(false, 
+                    System.Threading.EventResetMode.AutoReset, 
+                    "HPButtonRemap_ReloadConfig"))
+                {
+                    reloadEvent.Set(); // Signal the event
+                }
             }
             catch
             {
-                // Silently fail if we can't create signal
+                // Silently fail if we can't signal (tray app might not be running)
             }
         }
         
