@@ -34,10 +34,14 @@ This lightweight tray application monitors HP's WMI events (`hpqBEvnt`) and exec
 
 ## Installation
 
-1. **Download** the latest release from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
-2. **Extract** the ZIP file to a folder
-3. **Right-click** `Install.ps1` and select **"Run with PowerShell"**
+**Simple One-Click Installation:**
+
+1. **Download** `HPButtonRemap-Installer.exe` from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
+2. **Double-click** the installer
+3. **Click "Install"**
 4. **Done!** The tray icon should appear in your system tray
+
+The installer is a single self-contained executable with everything embedded - no ZIP extraction needed!
 
 The installer will:
 - Install the application to `%LOCALAPPDATA%\HPButtonRemap\`
@@ -86,8 +90,15 @@ Right-click the tray icon for quick access to:
 
 ## Uninstallation
 
-1. **Right-click** `Uninstall.ps1` and select **"Run with PowerShell"**
-2. **Choose** whether to keep your configuration file
+**Method 1: Via Tray Icon** (Easiest)
+1. **Right-click** the tray icon
+2. Select **"Uninstall..."**
+3. **Confirm** the uninstallation
+4. Your configuration will be backed up to your Desktop
+
+**Method 2: Via Installer**
+1. Run `HPButtonRemap-Installer.exe --uninstall`
+2. Follow the uninstallation wizard
 
 This will:
 - Stop the application
@@ -164,22 +175,31 @@ cd myhp-button-remap
 
 # Build the tray application
 cd HPButtonRemap
-dotnet build --configuration Release
+dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true
 
 # Build the configurator
 cd ../HPButtonRemapConfig
-dotnet build --configuration Release
+dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true
 
-# Return to root
-cd ..
+# Build the installer (optional - embeds the above two)
+cd ../Installer
+dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true
 
-# Run Install.ps1
+# The installer will be in Installer/bin/Release/net8.0-windows/win-x64/publish/
 ```
 
 **Requirements for building:**
 - .NET 8.0 SDK
 - Windows 10/11
 - Visual Studio or VS Code (optional, for IDE support)
+
+**Alternative: PowerShell Scripts**
+
+For manual installation without the GUI installer:
+```powershell
+# Build the components first, then run:
+.\Install.ps1
+```
 
 ## Configuration File Format
 

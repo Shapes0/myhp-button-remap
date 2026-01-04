@@ -66,6 +66,12 @@ public class TrayApplicationContext : ApplicationContext
         aboutItem.Click += (s, e) => ShowAbout();
         menu.Items.Add(aboutItem);
 
+        var uninstallItem = new ToolStripMenuItem("Uninstall...");
+        uninstallItem.Click += (s, e) => ShowUninstall();
+        menu.Items.Add(uninstallItem);
+
+        menu.Items.Add(new ToolStripSeparator());
+
         var exitItem = new ToolStripMenuItem("Exit");
         exitItem.Click += (s, e) => Exit();
         menu.Items.Add(exitItem);
@@ -228,6 +234,98 @@ public class TrayApplicationContext : ApplicationContext
             "About HP Button Remap",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
+    }
+
+    private void ShowUninstall()
+    {
+        var result = MessageBox.Show(
+            "This will uninstall HP Button Remap from your system.\n\n" +
+            "The following will be removed:\n" +
+            "• Startup shortcut\n" +
+            "• Start Menu shortcut\n" +
+            "• Application files\n\n" +
+            "Your configuration file will be backed up to your Desktop.\n\n" +
+            "Do you want to continue?",
+            "Uninstall HP Button Remap",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        if (result == DialogResult.Yes)
+        {
+            try
+            {
+                PerformUninstall();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error during uninstallation: {ex.Message}\n\n" +
+                    "You may need to manually remove files from:\n" +
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HPButtonRemap"),
+                    "Uninstall Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+    }
+
+    private void PerformUninstall()
+    {
+        // Paths
+        string installDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HPButtonRemap");
+        string startupFolder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+        string shortcutPath = Path.Combine(startupFolder, "HP Button Remap.lnk");
+        string startMenuFolder = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
+        string startMenuShortcut = Path.Combine(startMenuFolder, "HP Button Remap Configurator.lnk");
+
+        // Backup config
+        string configPath = Path.Combine(installDir, "config.json");
+        if (File.Exists(configPath))
+        {
+            string backupPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "HPButtonRemap-config-backup.json");
+            File.Copy(configPath, backupPath, true);
+        }
+
+        // Remove startup shortcut
+        if (File.Exists(shortcutPath))
+        {
+            File.Delete(shortcutPath);
+        }
+
+        // Remove Start Menu shortcut
+        if (File.Exists(startMenuShortcut))
+        {
+            File.Delete(startMenuShortcut);
+        }
+
+        // Create a batch file to delete the directory after the app exits
+        string batchPath = Path.Combine(Path.GetTempPath(), "HPButtonRemap-uninstall.bat");
+        string batchContent = $@"@echo off
+timeout /t 2 /nobreak >nul
+rd /s /q ""{installDir}""
+del ""{batchPath}""
+";
+        File.WriteAllText(batchPath, batchContent);
+
+        // Start the batch file
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = batchPath,
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            WindowStyle = ProcessWindowStyle.Hidden
+        });
+
+        MessageBox.Show(
+            "Uninstallation initiated successfully.\n\n" +
+            "The application will now close and complete the removal.\n\n" +
+            "Your configuration has been backed up to your Desktop.",
+            "Uninstall Complete",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
+
+        // Exit the application
+        Application.Exit();
     }
 
     private void Exit()

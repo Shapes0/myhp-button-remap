@@ -40,31 +40,44 @@ jobs:
     - name: Publish Configurator (self-contained)
       run: dotnet publish HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish/config
       
-    - name: Create release package
-      run: |
-        mkdir release
-        Copy-Item publish/service/HPButtonRemap.exe release/
-        Copy-Item publish/config/HPButtonRemapConfig.exe release/
-        Copy-Item config.json release/
-        Copy-Item CONFIG-EXAMPLES.md release/
-        Copy-Item README.md release/
-        Copy-Item LICENSE release/
-        Copy-Item Install.ps1 release/
-        Copy-Item Uninstall.ps1 release/
-        Compress-Archive -Path release/* -DestinationPath HPButtonRemap-${{ github.ref_name }}.zip
-      shell: pwsh
+    - name: Restore Installer dependencies
+      run: dotnet restore Installer/Installer.csproj
+      
+    - name: Build Installer (Release)
+      run: dotnet build Installer/Installer.csproj --configuration Release --no-restore
+      
+    - name: Publish Installer (self-contained)
+      run: dotnet publish Installer/Installer.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish/installer
       
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: HPButtonRemap-${{ github.ref_name }}
-        path: HPButtonRemap-${{ github.ref_name }}.zip
+        name: HPButtonRemap-Installer-${{ github.ref_name }}
+        path: ./publish/installer/HPButtonRemap-Installer.exe
         
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: HPButtonRemap-${{ github.ref_name }}.zip
+        files: ./publish/installer/HPButtonRemap-Installer.exe
+        body: |
+          # HP Button Remap ${{ github.ref_name }}
+          
+          ## Installation
+          
+          Simply download and run `HPButtonRemap-Installer.exe` - no other files needed!
+          
+          The installer will:
+          - Install the tray application to %LOCALAPPDATA%\HPButtonRemap
+          - Add a shortcut to your Startup folder (auto-start)
+          - Add a configurator to your Start Menu
+          - Start the application immediately
+          
+          ## Uninstallation
+          
+          Right-click the tray icon and select "Uninstall..."
+          
+          Or run `HPButtonRemap-Installer.exe --uninstall`
         generate_release_notes: true
         draft: false
         prerelease: false

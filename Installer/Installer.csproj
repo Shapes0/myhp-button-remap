@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>HPButtonRemap-Installer</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\publish\service\HPButtonRemap.exe">
+      <Link>Resources\HPButtonRemap.exe</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\publish\config\HPButtonRemapConfig.exe">
+      <Link>Resources\HPButtonRemapConfig.exe</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\config.json">
+      <Link>Resources\config.json</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>
