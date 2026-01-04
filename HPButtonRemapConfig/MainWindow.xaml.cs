@@ -112,7 +112,7 @@ namespace HPButtonRemapConfig
             }
         }
 
-        private void ShowStartupNotificationCheckBox_Changed(object sender, RoutedEventArgs e)
+        private void ShowStartupNotificationCheckBox_StateChanged(object sender, RoutedEventArgs e)
         {
             _showStartupNotification = ShowStartupNotificationCheckBox.IsChecked ?? true;
         }

@@ -203,7 +203,6 @@ The configuration is stored in JSON format:
 
 **Settings:**
 - `ShowStartupNotification` - (true/false) Show balloon notification when tray app starts with action count. Can be disabled in the configurator GUI if you find it annoying.
-```
 
 See `CONFIG-EXAMPLES.md` for more examples.
 
