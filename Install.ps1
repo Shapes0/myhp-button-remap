@@ -14,20 +14,40 @@ Write-Host ""
 
 # Get script directory
 $scriptDir = $PSScriptRoot
-$appPath = Join-Path $scriptDir "HPButtonRemap\bin\Release\net8.0-windows\HPButtonRemap.exe"
+
+# Check for prebuilt executable first (from release download)
+$prebuiltPath = Join-Path $scriptDir "HPButtonRemap.exe"
+$builtPath = Join-Path $scriptDir "HPButtonRemap\bin\Release\net8.0-windows\HPButtonRemap.exe"
 $configFile = Join-Path $scriptDir "config.json"
 
-# Check if we need to build first
-if (-not (Test-Path $appPath)) {
-    Write-Host "[INFO] Application not found. Building..." -ForegroundColor Yellow
-    Push-Location (Join-Path $scriptDir "HPButtonRemap")
-    try {
-        dotnet build --configuration Release
-        if ($LASTEXITCODE -ne 0) {
-            throw "Build failed"
+# Determine which executable to use
+$appPath = $null
+if (Test-Path $prebuiltPath) {
+    Write-Host "[INFO] Using prebuilt executable" -ForegroundColor Cyan
+    $appPath = $prebuiltPath
+} elseif (Test-Path $builtPath) {
+    Write-Host "[INFO] Using locally built executable" -ForegroundColor Cyan
+    $appPath = $builtPath
+} else {
+    # Try to build from source
+    Write-Host "[INFO] Executable not found. Building from source..." -ForegroundColor Yellow
+    $projectPath = Join-Path $scriptDir "HPButtonRemap"
+    
+    if (Test-Path $projectPath) {
+        Push-Location $projectPath
+        try {
+            dotnet build --configuration Release
+            if ($LASTEXITCODE -ne 0) {
+                throw "Build failed"
+            }
+            $appPath = $builtPath
+        } finally {
+            Pop-Location
         }
-    } finally {
-        Pop-Location
+    } else {
+        Write-Host "[ERROR] Cannot find prebuilt executable or source code" -ForegroundColor Red
+        Write-Host "Please download the release package from GitHub or clone the repository" -ForegroundColor Red
+        exit 1
     }
 }
 

@@ -32,35 +32,41 @@ This native Windows application monitors HP's WMI events (`hpqBEvnt` in the `roo
 
 - Windows 10/11
 - HP laptop with special function keys
-- .NET 8.0 Runtime (or SDK for building from source)
+- .NET 8.0 Runtime (only needed if building from source)
 - Administrator privileges (for installation only)
 
 ## Quick Start
 
 ### Option 1: Using Pre-built Binary (Recommended)
 
-1. **Clone or download** this repository
-2. **Build the application** (first time only):
-   ```powershell
-   cd HPButtonRemap
-   dotnet build --configuration Release
-   ```
-3. **Edit** `config.json` in the root directory to set your desired actions
+1. **Download the latest release** from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
+2. **Extract the ZIP file** to a folder of your choice
+3. **Edit** `config.json` to set your desired actions (see examples below)
 4. **Right-click** `Install.ps1` and select **"Run with PowerShell"**
 5. Accept the UAC prompt
-6. **Restart** or run: `Start-ScheduledTask -TaskName "HP-Button-Remap"`
+6. The application will start automatically at next logon, or run: `Start-ScheduledTask -TaskName "HP-Button-Remap"`
 
 ### Option 2: Building from Source
 
+If you want to build from source instead of using the prebuilt binary:
+
 ```powershell
-# Navigate to the project directory
-cd HPButtonRemap
+# Clone the repository
+git clone https://github.com/Shapes0/myhp-button-remap.git
+cd myhp-button-remap
 
 # Build the project
+cd HPButtonRemap
 dotnet build --configuration Release
 
-# The executable will be in: bin/Release/net8.0-windows/HPButtonRemap.exe
+# Return to root and install
+cd ..
+# Right-click Install.ps1 and select "Run with PowerShell"
 ```
+
+**Requirements for building from source:**
+- .NET 8.0 SDK
+- Windows 10/11
 
 ## Configuration
 
@@ -268,6 +274,22 @@ This will:
   - System.Management 10.0.1 (WMI event monitoring)
   - Newtonsoft.Json 13.0.4 (JSON configuration parsing)
 - **Architecture**: Single-threaded event-driven design
+- **Distribution**: Prebuilt binaries available via GitHub Releases, automated by GitHub Actions
+
+## Releases
+
+Prebuilt binaries are automatically compiled and packaged using GitHub Actions whenever a new version tag is created. 
+
+**For Users:**
+- Download the latest release ZIP from the [Releases page](https://github.com/Shapes0/myhp-button-remap/releases)
+- The ZIP contains everything you need: the executable, config files, and install scripts
+- No need to install .NET SDK or build from source
+
+**For Maintainers:**
+To create a new release:
+1. Tag the commit with a version number: `git tag v1.0.0`
+2. Push the tag: `git push origin v1.0.0`
+3. GitHub Actions will automatically build and create a release with the compiled binary
 
 ## Differences from Previous PowerShell Version
 
