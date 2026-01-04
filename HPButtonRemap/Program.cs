@@ -20,6 +20,8 @@ public class TrayApplicationContext : ApplicationContext
     private WmiEventMonitor? _monitor;
     private ActionExecutor _executor;
     private Config? _currentConfig;
+    private FileSystemWatcher? _configWatcher;
+    private System.Threading.Timer? _reloadDebounceTimer;
     private static readonly string ConfigPath = Path.Combine(
         AppDomain.CurrentDomain.BaseDirectory,
         "config.json"
@@ -40,6 +42,57 @@ public class TrayApplicationContext : ApplicationContext
 
         // Load config and start monitoring
         StartMonitoring();
+        
+        // Set up file watcher for automatic reload
+        SetupConfigWatcher();
+    }
+    
+    private void SetupConfigWatcher()
+    {
+        try
+        {
+            var configDir = Path.GetDirectoryName(ConfigPath);
+            var configFile = Path.GetFileName(ConfigPath);
+            
+            if (configDir != null && Directory.Exists(configDir))
+            {
+                _configWatcher = new FileSystemWatcher(configDir, configFile)
+                {
+                    NotifyFilter = NotifyFilters.LastWrite,
+                    EnableRaisingEvents = true
+                };
+                
+                _configWatcher.Changed += OnConfigFileChanged;
+            }
+        }
+        catch
+        {
+            // Silently fail if we can't set up file watcher
+        }
+    }
+    
+    private void OnConfigFileChanged(object sender, FileSystemEventArgs e)
+    {
+        // Debounce - only reload after file write is complete
+        _reloadDebounceTimer?.Dispose();
+        _reloadDebounceTimer = new System.Threading.Timer(_ =>
+        {
+            try
+            {
+                // Use invoke to run on UI thread
+                if (_trayIcon.ContextMenuStrip != null)
+                {
+                    _trayIcon.ContextMenuStrip.Invoke(new Action(() =>
+                    {
+                        ReloadConfiguration();
+                    }));
+                }
+            }
+            catch
+            {
+                // Ignore errors during automatic reload
+            }
+        }, null, 500, System.Threading.Timeout.Infinite);
     }
 
     private ContextMenuStrip CreateContextMenu()

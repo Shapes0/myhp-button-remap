@@ -77,6 +77,21 @@ namespace HPButtonRemapConfig
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
+            SaveConfiguration();
+        }
+        
+        private void ApplyButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (SaveConfiguration())
+            {
+                // Config file will be automatically reloaded by the tray app's FileSystemWatcher
+                MessageBox.Show("Configuration saved and applied successfully!\n\nThe tray application will reload automatically.", 
+                    "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        
+        private bool SaveConfiguration()
+        {
             try
             {
                 var config = new Config 
@@ -104,11 +119,12 @@ namespace HPButtonRemapConfig
                     File.WriteAllText(targetPath, json);
                 }
 
-                MessageBox.Show($"Configuration saved successfully to:\n{targetPath}\n\nNote: To apply changes, use 'Reload Configuration' from the tray icon menu.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                return true;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error saving configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
             }
         }
 

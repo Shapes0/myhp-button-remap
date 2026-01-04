@@ -60,7 +60,8 @@
                 <TextBlock Text="(Displays number of monitored actions when tray app starts)" Foreground="Gray" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="11"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="SaveButton" Content="Save Configuration" Width="150" Margin="5,0" Click="SaveButton_Click" Height="30"/>
+                <Button x:Name="ApplyButton" Content="Apply Changes" Width="150" Margin="5,0" Click="ApplyButton_Click" Height="30" FontWeight="Bold"/>
+                <Button x:Name="SaveButton" Content="Save" Width="100" Margin="5,0" Click="SaveButton_Click" Height="30"/>
                 <Button x:Name="CloseButton" Content="Close" Width="100" Margin="5,0" Click="CloseButton_Click" Height="30"/>
             </StackPanel>
         </StackPanel>

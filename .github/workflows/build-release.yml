@@ -43,9 +43,6 @@ jobs:
     - name: Restore Installer dependencies
       run: dotnet restore Installer/Installer.csproj
       
-    - name: Build Installer (Release)
-      run: dotnet build Installer/Installer.csproj --configuration Release --no-restore
-      
     - name: Publish Installer (self-contained)
       run: dotnet publish Installer/Installer.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output ./publish/installer
       
