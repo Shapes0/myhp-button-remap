@@ -46,7 +46,7 @@ This native Windows application monitors HP's WMI events (`hpqBEvnt` in the `roo
    dotnet build --configuration Release
    ```
 3. **Edit** `config.json` in the root directory to set your desired actions
-4. **Right-click** `Install-Native.ps1` and select **"Run with PowerShell"**
+4. **Right-click** `Install.ps1` and select **"Run with PowerShell"**
 5. Accept the UAC prompt
 6. **Restart** or run: `Start-ScheduledTask -TaskName "HP-Button-Remap"`
 
@@ -215,7 +215,7 @@ Note: Most HP laptops only have one special button (EventID 29, EventData 8616).
 
 ## Installation
 
-Right-click `Install-Native.ps1` and select **"Run with PowerShell"**
+Right-click `Install.ps1` and select **"Run with PowerShell"**
 
 The installer will:
 - Build the application if needed
@@ -224,7 +224,7 @@ The installer will:
 
 ## Uninstallation
 
-Right-click `Uninstall-Native.ps1` and select **"Run with PowerShell"**
+Right-click `Uninstall.ps1` and select **"Run with PowerShell"**
 
 This will:
 - Stop any running instances
@@ -269,17 +269,15 @@ This will:
   - Newtonsoft.Json 13.0.4 (JSON configuration parsing)
 - **Architecture**: Single-threaded event-driven design
 
-## Differences from PowerShell Version
+## Differences from Previous PowerShell Version
 
-The previous PowerShell version (`HP-HotkeyHandler.ps1`) has been replaced with this native application for the following benefits:
+The original PowerShell-based implementation has been replaced with this native application for the following benefits:
 
 - **Better Performance**: Native compiled code vs. interpreted PowerShell
 - **Lower Resource Usage**: No PowerShell host overhead
 - **More Reliable**: Proper error handling and restart capabilities
 - **Extended Functionality**: Support for key combos and more action types
 - **Cleaner Implementation**: Strongly-typed configuration and proper separation of concerns
-
-The old PowerShell scripts (`Install.ps1`, `Uninstall.ps1`, `HP-HotkeyHandler.ps1`) are kept for reference but are no longer needed.
 
 ## Contributing
 

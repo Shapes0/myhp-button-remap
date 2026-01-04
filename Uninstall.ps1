@@ -1,23 +1,25 @@
 <#
 .SYNOPSIS
-    Uninstaller for HP WMI Hotkey Handler
+    Uninstaller for HP Button Remap - Native Windows Application
 .DESCRIPTION
-    Removes the scheduled task and stops any running handlers.
+    Removes the scheduled task and stops the application.
 #>
 
 #Requires -RunAsAdministrator
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== HP WMI Hotkey Handler Uninstaller ===" -ForegroundColor Cyan
+Write-Host "=== HP Button Remap Uninstaller ===" -ForegroundColor Cyan
 Write-Host ""
 
-$taskName = "HP-WMI-Hotkey-Handler"
+$taskName = "HP-Button-Remap"
 
-# Stop running handlers
-Get-EventSubscriber | Where-Object { $_.SourceIdentifier -like "HPHotkey_*" } | ForEach-Object {
-    Unregister-Event -SourceIdentifier $_.SourceIdentifier -Force
-    Write-Host "[OK] Stopped event handler: $($_.SourceIdentifier)" -ForegroundColor Green
+# Stop any running instances
+$processes = Get-Process -Name "HPButtonRemap" -ErrorAction SilentlyContinue
+if ($processes) {
+    Write-Host "[INFO] Stopping running instances..." -ForegroundColor Yellow
+    $processes | Stop-Process -Force
+    Write-Host "[OK] Stopped running instances" -ForegroundColor Green
 }
 
 # Remove scheduled task

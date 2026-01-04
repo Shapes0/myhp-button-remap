@@ -1,25 +1,40 @@
 <#
 .SYNOPSIS
-    Installer for HP WMI Hotkey Handler
+    Installer for HP Button Remap - Native Windows Application
 .DESCRIPTION
-    Creates a scheduled task to run the hotkey handler at user logon.
+    Creates a scheduled task to run the native application at user logon.
 #>
 
 #Requires -RunAsAdministrator
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== HP WMI Hotkey Handler Installer ===" -ForegroundColor Cyan
+Write-Host "=== HP Button Remap Installer ===" -ForegroundColor Cyan
 Write-Host ""
 
 # Get script directory
 $scriptDir = $PSScriptRoot
-$handlerScript = Join-Path $scriptDir "HP-HotkeyHandler.ps1"
+$appPath = Join-Path $scriptDir "HPButtonRemap\bin\Release\net8.0-windows\HPButtonRemap.exe"
 $configFile = Join-Path $scriptDir "config.json"
 
+# Check if we need to build first
+if (-not (Test-Path $appPath)) {
+    Write-Host "[INFO] Application not found. Building..." -ForegroundColor Yellow
+    Push-Location (Join-Path $scriptDir "HPButtonRemap")
+    try {
+        dotnet build --configuration Release
+        if ($LASTEXITCODE -ne 0) {
+            throw "Build failed"
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
 # Validate files exist
-if (-not (Test-Path $handlerScript)) {
-    Write-Host "[ERROR] Handler script not found: $handlerScript" -ForegroundColor Red
+if (-not (Test-Path $appPath)) {
+    Write-Host "[ERROR] Application not found: $appPath" -ForegroundColor Red
+    Write-Host "Please build the application first using 'dotnet build' in the HPButtonRemap directory" -ForegroundColor Red
     exit 1
 }
 
@@ -31,8 +46,8 @@ if (-not (Test-Path $configFile)) {
 Write-Host "[OK] Found required files" -ForegroundColor Green
 
 # Create scheduled task
-$taskName = "HP-WMI-Hotkey-Handler"
-$taskDescription = "Custom handler for HP special function keys via WMI events"
+$taskName = "HP-Button-Remap"
+$taskDescription = "Native Windows application for remapping HP laptop special function keys"
 
 # Remove existing task if present
 $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
@@ -43,8 +58,8 @@ if ($existingTask) {
 
 # Create new task
 $action = New-ScheduledTaskAction `
-    -Execute "powershell.exe" `
-    -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File `"$handlerScript`""
+    -Execute $appPath `
+    -WorkingDirectory $scriptDir
 
 $trigger = New-ScheduledTaskTrigger -AtLogon -User $env:USERNAME
 
@@ -71,9 +86,9 @@ Register-ScheduledTask `
 Write-Host ""
 Write-Host "[SUCCESS] Installation complete!" -ForegroundColor Green
 Write-Host ""
-Write-Host "The handler will start automatically at next logon." -ForegroundColor Cyan
+Write-Host "The application will start automatically at next logon." -ForegroundColor Cyan
 Write-Host "To start it now, run: Start-ScheduledTask -TaskName '$taskName'" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Configuration file: $configFile" -ForegroundColor Yellow
-Write-Host "Edit this file to customize your hotkey actions." -ForegroundColor Yellow
+Write-Host "Edit this file to customize your button actions." -ForegroundColor Yellow
 Write-Host ""
