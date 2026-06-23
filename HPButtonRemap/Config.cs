@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using System.Text.Json;
 
 namespace HPButtonRemap;
 
@@ -26,7 +25,7 @@ public class Config
 /// </summary>
 public class ButtonAction
 {
-    [JsonConverter(typeof(ActionTypeJsonConverter))]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public ActionType Type { get; set; } = ActionType.RunCommand;
 
     public string? Command { get; set; }
@@ -63,39 +62,4 @@ public enum ActionType
     SendText,
     RunCommand,
     OpenWebsite
-}
-
-public sealed class ActionTypeJsonConverter : JsonConverter<ActionType>
-{
-    public override ActionType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        if (reader.TokenType != JsonTokenType.String)
-        {
-            throw new JsonException("ActionType must be a string.");
-        }
-
-        string? raw = reader.GetString();
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            throw new JsonException("ActionType cannot be empty.");
-        }
-
-        // Keep old configs working without exposing SendKeys as a first-class action.
-        if (string.Equals(raw, "SendKeys", StringComparison.OrdinalIgnoreCase))
-        {
-            return ActionType.RemapKey;
-        }
-
-        if (Enum.TryParse<ActionType>(raw, ignoreCase: true, out var parsed))
-        {
-            return parsed;
-        }
-
-        throw new JsonException($"Unknown ActionType: '{raw}'.");
-    }
-
-    public override void Write(Utf8JsonWriter writer, ActionType value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.ToString());
-    }
 }

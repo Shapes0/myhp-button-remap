@@ -1,6 +1,6 @@
-# HP Button Remap (Single-Button Config)
+# HP Button Remap
 
-Lightweight tray app for remapping HP special function button events from `hpqBEvnt`.
+Tray app for remapping HP special function button events from `hpqBEvnt`.
 
 ## Requirements
 
@@ -25,7 +25,7 @@ Edit `%LOCALAPPDATA%\HPButtonRemap\config.json` and click tray menu -> **Reload 
 
 ### Config shape
 
-- `EventID` and `EventData` are root-level (single button model)
+- `EventID` and `EventData` are root-level
 - one `Action` object (not an array)
 
 Built-in default `config.json` is focused on `RunCommand`:
