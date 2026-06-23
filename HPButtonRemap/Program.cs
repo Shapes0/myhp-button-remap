@@ -1,5 +1,6 @@
 ﻿using HPButtonRemap;
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace HPButtonRemap;
 
@@ -27,6 +28,11 @@ public class TrayApplicationContext : ApplicationContext
         "config.json"
     );
     private const string IPC_EVENT_NAME = "HPButtonRemap_ReloadConfig";
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
 
     public TrayApplicationContext()
     {
@@ -92,10 +98,6 @@ public class TrayApplicationContext : ApplicationContext
         var openConfigItem = new ToolStripMenuItem("Open Configuration");
         openConfigItem.Click += (s, e) => OpenConfiguration();
         menu.Items.Add(openConfigItem);
-
-        var openConfiguratorItem = new ToolStripMenuItem("Open Configurator");
-        openConfiguratorItem.Click += (s, e) => OpenConfigurator();
-        menu.Items.Add(openConfiguratorItem);
 
         menu.Items.Add(new ToolStripSeparator());
 
@@ -168,7 +170,7 @@ public class TrayApplicationContext : ApplicationContext
             }
 
             var json = File.ReadAllText(ConfigPath);
-            var config = Newtonsoft.Json.JsonConvert.DeserializeObject<Config>(json);
+            var config = JsonSerializer.Deserialize<Config>(json, JsonOptions);
             return config;
         }
         catch (Exception ex)
@@ -190,17 +192,17 @@ public class TrayApplicationContext : ApplicationContext
             {
                 new ButtonAction
                 {
-                    Name = "F11 Key - Launch Notepad",
+                    Name = "F11 Key - Open Windows Terminal",
                     EventID = 29,
                     EventData = 8616,
-                    Type = ActionType.LaunchApp,
-                    LaunchPath = "notepad.exe",
-                    LaunchArguments = ""
+                    Type = ActionType.RunCommand,
+                    Command = "wt.exe",
+                    CreateNewWindow = true
                 }
             }
         };
 
-        var json = Newtonsoft.Json.JsonConvert.SerializeObject(sampleConfig, Newtonsoft.Json.Formatting.Indented);
+        var json = JsonSerializer.Serialize(sampleConfig, JsonOptions);
         File.WriteAllText(ConfigPath, json);
     }
 
@@ -223,40 +225,6 @@ public class TrayApplicationContext : ApplicationContext
         }
     }
 
-    private void OpenConfigurator()
-    {
-        try
-        {
-            var configuratorPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "HPButtonRemapConfig.exe"
-            );
-
-            if (File.Exists(configuratorPath))
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = configuratorPath,
-                    UseShellExecute = true
-                });
-            }
-            else
-            {
-                MessageBox.Show("Configurator not found. Please use 'Open Configuration' to edit manually.", 
-                    "HP Button Remap", 
-                    MessageBoxButtons.OK, 
-                    MessageBoxIcon.Warning);
-            }
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Error opening configurator: {ex.Message}", 
-                "HP Button Remap Error", 
-                MessageBoxButtons.OK, 
-                MessageBoxIcon.Error);
-        }
-    }
-
     private void ReloadConfiguration()
     {
         StartMonitoring();
@@ -270,7 +238,8 @@ public class TrayApplicationContext : ApplicationContext
 
         MessageBox.Show(
             "HP Button Remap\n\n" +
-            "Monitors HP laptop special function keys and executes configured actions.\n\n" +
+            "Monitors HP laptop special function keys and executes configured actions.\n" +
+            "Supported actions: remap keys, send text, run command/program, open URL.\n\n" +
             statusText + "\n\n" +
             "Configuration: " + ConfigPath + "\n\n" +
             "Right-click the tray icon to access options.",
@@ -285,7 +254,6 @@ public class TrayApplicationContext : ApplicationContext
             "This will uninstall HP Button Remap from your system.\n\n" +
             "The following will be removed:\n" +
             "• Startup shortcut\n" +
-            "• Start Menu shortcut\n" +
             "• Application files\n\n" +
             "Your configuration file will be backed up to your Desktop.\n\n" +
             "Do you want to continue?",
@@ -318,8 +286,6 @@ public class TrayApplicationContext : ApplicationContext
         string installDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HPButtonRemap");
         string startupFolder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
         string shortcutPath = Path.Combine(startupFolder, "HP Button Remap.lnk");
-        string startMenuFolder = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
-        string startMenuShortcut = Path.Combine(startMenuFolder, "HP Button Remap Configurator.lnk");
 
         // Backup config
         string configPath = Path.Combine(installDir, "config.json");
@@ -333,12 +299,6 @@ public class TrayApplicationContext : ApplicationContext
         if (File.Exists(shortcutPath))
         {
             File.Delete(shortcutPath);
-        }
-
-        // Remove Start Menu shortcut
-        if (File.Exists(startMenuShortcut))
-        {
-            File.Delete(startMenuShortcut);
         }
 
         // Create a batch file to delete the directory after the app exits

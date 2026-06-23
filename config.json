@@ -2,12 +2,12 @@
   "ShowStartupNotification": true,
   "ButtonActions": [
     {
-      "Name": "F11 Key - Launch Notepad",
+      "Name": "F11 Key - Open Windows Terminal",
       "EventID": 29,
       "EventData": 8616,
-      "Type": "LaunchApp",
-      "LaunchPath": "notepad.exe",
-      "LaunchArguments": ""
+      "Type": "RunCommand",
+      "Command": "wt.exe",
+      "CreateNewWindow": true
     }
   ]
 }

@@ -1,21 +1,19 @@
 <#
 .SYNOPSIS
-    Uninstaller for HP Button Remap
+    Lightweight uninstaller for HP Button Remap
 .DESCRIPTION
-    Removes the HP Button Remap tray application
+    Removes startup registration and installed files.
 #>
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== HP Button Remap Uninstaller ===" -ForegroundColor Cyan
+Write-Host "=== HP Button Remap Lightweight Uninstaller ===" -ForegroundColor Cyan
 Write-Host ""
 
 # Paths
 $installDir = Join-Path $env:LOCALAPPDATA "HPButtonRemap"
 $startupFolder = [Environment]::GetFolderPath("Startup")
 $shortcutPath = Join-Path $startupFolder "HP Button Remap.lnk"
-$startMenuFolder = [Environment]::GetFolderPath("Programs")
-$startMenuShortcut = Join-Path $startMenuFolder "HP Button Remap Configurator.lnk"
 
 # Stop the running application
 Write-Host "[INFO] Stopping HP Button Remap..." -ForegroundColor Cyan
@@ -27,13 +25,6 @@ if (Test-Path $shortcutPath) {
     Write-Host "[INFO] Removing startup shortcut..." -ForegroundColor Cyan
     Remove-Item $shortcutPath -Force
     Write-Host "[INFO] Startup shortcut removed" -ForegroundColor Green
-}
-
-# Remove Start Menu shortcut
-if (Test-Path $startMenuShortcut) {
-    Write-Host "[INFO] Removing Start Menu shortcut..." -ForegroundColor Cyan
-    Remove-Item $startMenuShortcut -Force
-    Write-Host "[INFO] Start Menu shortcut removed" -ForegroundColor Green
 }
 
 # Ask user about config
