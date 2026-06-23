@@ -40,7 +40,7 @@ Use tray menu -> **Uninstall...**
 
 Edit `%LOCALAPPDATA%\HPButtonRemap\config.json` (or use tray menu -> **Open Configuration**) and then **Reload Configuration**.
 
-Default example (launch a new Windows Terminal):
+Default example (launch a command in a new window):
 
 ```json
 {
@@ -48,7 +48,7 @@ Default example (launch a new Windows Terminal):
   "RunAtStartup": true,
   "ButtonActions": [
     {
-      "Name": "F11 Key - Open Windows Terminal",
+      "Name": "F11 Key - Run a command",
       "EventID": 29,
       "EventData": 8616,
       "Type": "RunCommand",
@@ -136,13 +136,7 @@ dotnet publish .\HPButtonRemap\HPButtonRemap.csproj `
   -p:EnableCompressionInSingleFile=true
 ```
 
-## Notes on Windows Terminal (`wt.exe`)
-
-The launcher includes fallback logic for common `wt.exe` alias/path issues by trying:
-
-1. normal launch
-2. `%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe`
-3. `explorer.exe shell:AppsFolder\Microsoft.WindowsTerminal_8wekyb3d8bbwe!App`
+`wt.exe` is only an example command above; the utility does not have Windows Terminal-specific behavior.
 
 ## License
 

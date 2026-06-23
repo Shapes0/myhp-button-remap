@@ -108,12 +108,7 @@ public class ActionExecutor
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 2 || ex.NativeErrorCode == 3)
         {
-            // This fallback catches PATH/AppAlias edge-cases (for example wt.exe).
-            if (IsWindowsTerminalAlias(fileName) && TryLaunchWindowsTerminal(arguments, action.WorkingDirectory))
-            {
-                return;
-            }
-
+            // Generic fallback for PATH/AppAlias resolution edge-cases.
             LaunchViaCmdStart(fileName, arguments, action.WorkingDirectory);
             Debug.WriteLine($"Launched via cmd start fallback: {fileName} {arguments}");
         }
@@ -388,51 +383,6 @@ public class ActionExecutor
         }
 
         Process.Start(startInfo);
-    }
-
-    private static bool TryLaunchWindowsTerminal(string arguments, string? workingDirectory)
-    {
-        try
-        {
-            string aliasPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Microsoft",
-                "WindowsApps",
-                "wt.exe"
-            );
-
-            if (File.Exists(aliasPath))
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = aliasPath,
-                    Arguments = arguments,
-                    UseShellExecute = true,
-                    WorkingDirectory = string.IsNullOrWhiteSpace(workingDirectory)
-                        ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
-                        : workingDirectory
-                });
-                return true;
-            }
-
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "explorer.exe",
-                Arguments = "shell:AppsFolder\\Microsoft.WindowsTerminal_8wekyb3d8bbwe!App",
-                UseShellExecute = true
-            });
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static bool IsWindowsTerminalAlias(string fileName)
-    {
-        string normalized = Path.GetFileName(fileName).ToLowerInvariant();
-        return normalized is "wt" or "wt.exe";
     }
 
     private static string BuildCommandForStart(string fileName, string arguments)
