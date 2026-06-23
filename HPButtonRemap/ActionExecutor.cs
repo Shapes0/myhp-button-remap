@@ -426,7 +426,33 @@ public class ActionExecutor
         }
         catch (Win32Exception)
         {
-            return false;
+            string? aliasPath = ResolveWindowsAppsAlias(fileName);
+            if (string.IsNullOrWhiteSpace(aliasPath))
+            {
+                return false;
+            }
+
+            try
+            {
+                var aliasStartInfo = new ProcessStartInfo
+                {
+                    FileName = aliasPath,
+                    Arguments = arguments,
+                    UseShellExecute = true
+                };
+
+                if (!string.IsNullOrWhiteSpace(workingDirectory))
+                {
+                    aliasStartInfo.WorkingDirectory = workingDirectory;
+                }
+
+                Process.Start(aliasStartInfo);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
         catch
         {
@@ -481,6 +507,37 @@ public class ActionExecutor
         fileName = trimmed[..firstSpace];
         arguments = trimmed[(firstSpace + 1)..].TrimStart();
         return true;
+    }
+
+    private static string? ResolveWindowsAppsAlias(string fileName)
+    {
+        if (Path.IsPathRooted(fileName) || fileName.Contains(Path.DirectorySeparatorChar) || fileName.Contains(Path.AltDirectorySeparatorChar))
+        {
+            return null;
+        }
+
+        string windowsAppsDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Microsoft",
+            "WindowsApps"
+        );
+
+        string candidate = Path.Combine(windowsAppsDir, fileName);
+        if (File.Exists(candidate))
+        {
+            return candidate;
+        }
+
+        if (!fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            string exeCandidate = candidate + ".exe";
+            if (File.Exists(exeCandidate))
+            {
+                return exeCandidate;
+            }
+        }
+
+        return null;
     }
 
     private static string BuildCommandForStart(string fileName, string arguments)
