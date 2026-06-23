@@ -129,7 +129,7 @@ public class ActionExecutor
         }
 
         string arguments = action.CreateNewWindow
-            ? $"/d /c start \"\" cmd /d /c {action.Command}"
+            ? $"/d /c start \"\" {action.Command}"
             : $"/d /c {action.Command}";
 
         var startInfo = new ProcessStartInfo
@@ -146,6 +146,7 @@ public class ActionExecutor
             startInfo.WorkingDirectory = action.WorkingDirectory;
         }
 
+        EnsureWindowsAppsPath(startInfo);
         Process.Start(startInfo);
         Debug.WriteLine($"Executed command: {action.Command}");
     }
@@ -392,6 +393,7 @@ public class ActionExecutor
             startInfo.WorkingDirectory = workingDirectory;
         }
 
+        EnsureWindowsAppsPath(startInfo);
         Process.Start(startInfo);
     }
 
@@ -426,33 +428,32 @@ public class ActionExecutor
         }
         catch (Win32Exception)
         {
-            string? aliasPath = ResolveWindowsAppsAlias(fileName);
-            if (string.IsNullOrWhiteSpace(aliasPath))
+            foreach (string aliasPath in ResolveWindowsAppsAliasCandidates(fileName))
             {
-                return false;
-            }
-
-            try
-            {
-                var aliasStartInfo = new ProcessStartInfo
+                try
                 {
-                    FileName = aliasPath,
-                    Arguments = arguments,
-                    UseShellExecute = true
-                };
+                    var aliasStartInfo = new ProcessStartInfo
+                    {
+                        FileName = aliasPath,
+                        Arguments = arguments,
+                        UseShellExecute = true
+                    };
 
-                if (!string.IsNullOrWhiteSpace(workingDirectory))
-                {
-                    aliasStartInfo.WorkingDirectory = workingDirectory;
+                    if (!string.IsNullOrWhiteSpace(workingDirectory))
+                    {
+                        aliasStartInfo.WorkingDirectory = workingDirectory;
+                    }
+
+                    Process.Start(aliasStartInfo);
+                    return true;
                 }
+                catch
+                {
+                    // Try next candidate
+                }
+            }
 
-                Process.Start(aliasStartInfo);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
+            return false;
         }
         catch
         {
@@ -509,11 +510,11 @@ public class ActionExecutor
         return true;
     }
 
-    private static string? ResolveWindowsAppsAlias(string fileName)
+    private static IEnumerable<string> ResolveWindowsAppsAliasCandidates(string fileName)
     {
         if (Path.IsPathRooted(fileName) || fileName.Contains(Path.DirectorySeparatorChar) || fileName.Contains(Path.AltDirectorySeparatorChar))
         {
-            return null;
+            yield break;
         }
 
         string windowsAppsDir = Path.Combine(
@@ -522,22 +523,34 @@ public class ActionExecutor
             "WindowsApps"
         );
 
-        string candidate = Path.Combine(windowsAppsDir, fileName);
-        if (File.Exists(candidate))
-        {
-            return candidate;
-        }
+        // Do not gate by File.Exists; some alias stubs can behave oddly for existence checks.
+        yield return Path.Combine(windowsAppsDir, fileName);
 
         if (!fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
         {
-            string exeCandidate = candidate + ".exe";
-            if (File.Exists(exeCandidate))
-            {
-                return exeCandidate;
-            }
+            yield return Path.Combine(windowsAppsDir, fileName + ".exe");
         }
+    }
 
-        return null;
+    private static void EnsureWindowsAppsPath(ProcessStartInfo startInfo)
+    {
+        string windowsAppsDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Microsoft",
+            "WindowsApps"
+        );
+
+        string currentPath = startInfo.Environment.TryGetValue("PATH", out string? value) && !string.IsNullOrWhiteSpace(value)
+            ? value
+            : Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+
+        if (!currentPath.Contains(windowsAppsDir, StringComparison.OrdinalIgnoreCase))
+        {
+            string combined = string.IsNullOrWhiteSpace(currentPath)
+                ? windowsAppsDir
+                : currentPath + Path.PathSeparator + windowsAppsDir;
+            startInfo.Environment["PATH"] = combined;
+        }
     }
 
     private static string BuildCommandForStart(string fileName, string arguments)
