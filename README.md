@@ -96,7 +96,3 @@ dotnet publish .\HPButtonRemap\HPButtonRemap.csproj `
   -p:PublishSingleFile=true `
   --output .\publish\app
 ```
-
-## License
-
-MIT (see `LICENSE`)
