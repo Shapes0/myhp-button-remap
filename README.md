@@ -18,7 +18,7 @@ Lightweight tray application for remapping HP laptop special function keys (MyHP
 
 ## Install
 
-1. Download and unzip the lightweight package.
+1. Download `HPButtonRemap.exe`.
 2. Run `HPButtonRemap.exe`.
 
 On first run, the app self-installs to `%LOCALAPPDATA%\HPButtonRemap\` and relaunches from there.
@@ -123,8 +123,7 @@ dotnet publish .\HPButtonRemap\HPButtonRemap.csproj `
   --configuration Release `
   --runtime win-x64 `
   --self-contained false `
-  -p:PublishSingleFile=true `
-  -p:EnableCompressionInSingleFile=true
+  -p:PublishSingleFile=true
 ```
 
 `wt.exe` is only an example command above; the utility does not have Windows Terminal-specific behavior.

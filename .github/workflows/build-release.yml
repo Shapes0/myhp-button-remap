@@ -29,28 +29,19 @@ jobs:
       run: dotnet build HPButtonRemap/HPButtonRemap.csproj --configuration Release --no-restore
 
     - name: Publish app (framework-dependent single file)
-      run: dotnet publish HPButtonRemap/HPButtonRemap.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true --output ./publish/app
-
-    - name: Create lightweight release zip
-      shell: pwsh
-      run: |
-        New-Item -ItemType Directory -Path ./publish/package -Force | Out-Null
-        Copy-Item ./publish/app/HPButtonRemap.exe ./publish/package/HPButtonRemap.exe -Force
-        Copy-Item ./config.json ./publish/package/config.json -Force
-        Copy-Item ./README.md ./publish/package/README.md -Force
-        Compress-Archive -Path ./publish/package/* -DestinationPath ./publish/HPButtonRemap-${{ github.ref_name }}-lightweight.zip -Force
+      run: dotnet publish HPButtonRemap/HPButtonRemap.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true --output ./publish/app
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: HPButtonRemap-lightweight-${{ github.ref_name }}
-        path: ./publish/HPButtonRemap-${{ github.ref_name }}-lightweight.zip
+        path: ./publish/app/HPButtonRemap.exe
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: ./publish/HPButtonRemap-${{ github.ref_name }}-lightweight.zip
+        files: ./publish/app/HPButtonRemap.exe
         body: |
           # HP Button Remap ${{ github.ref_name }}
 
@@ -61,8 +52,8 @@ jobs:
 
           ## Installation
 
-          1. Download and unzip `HPButtonRemap-<version>-lightweight.zip`
-          2. Run `HPButtonRemap.exe` once
+          1. Download `HPButtonRemap.exe`
+          2. Run it once (it self-installs to `%LOCALAPPDATA%\HPButtonRemap`)
 
           ## Uninstallation
 
