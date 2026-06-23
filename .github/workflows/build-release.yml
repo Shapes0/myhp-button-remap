@@ -12,74 +12,61 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
-        
-    - name: Restore Service dependencies
+
+    - name: Restore app dependencies
       run: dotnet restore HPButtonRemap/HPButtonRemap.csproj
-      
-    - name: Build Service (Release)
+
+    - name: Build app (Release)
       run: dotnet build HPButtonRemap/HPButtonRemap.csproj --configuration Release --no-restore
-      
-    - name: Publish Service (framework-dependent)
-      run: dotnet publish HPButtonRemap/HPButtonRemap.csproj --configuration Release --runtime win-x64 --self-contained false --output ./publish/service
-      
-    - name: Restore Configurator dependencies
-      run: dotnet restore HPButtonRemapConfig/HPButtonRemapConfig.csproj
-      
-    - name: Build Configurator (Release)
-      run: dotnet build HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --no-restore
-      
-    - name: Publish Configurator (framework-dependent)
-      run: dotnet publish HPButtonRemapConfig/HPButtonRemapConfig.csproj --configuration Release --runtime win-x64 --self-contained false --output ./publish/config
-      
-    - name: Publish Installer (framework-dependent single file with compression)
-      run: dotnet publish Installer/Installer.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true --output ./publish/installer
-      
+
+    - name: Publish app (framework-dependent single file)
+      run: dotnet publish HPButtonRemap/HPButtonRemap.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true --output ./publish/app
+
+    - name: Create lightweight release zip
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Path ./publish/package -Force | Out-Null
+        Copy-Item ./publish/app/HPButtonRemap.exe ./publish/package/HPButtonRemap.exe -Force
+        Copy-Item ./config.json ./publish/package/config.json -Force
+        Copy-Item ./README.md ./publish/package/README.md -Force
+        Compress-Archive -Path ./publish/package/* -DestinationPath ./publish/HPButtonRemap-${{ github.ref_name }}-lightweight.zip -Force
+
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: HPButtonRemap-Installer-${{ github.ref_name }}
-        path: ./publish/installer/HPButtonRemap-Installer.exe
-        
+        name: HPButtonRemap-lightweight-${{ github.ref_name }}
+        path: ./publish/HPButtonRemap-${{ github.ref_name }}-lightweight.zip
+
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: ./publish/installer/HPButtonRemap-Installer.exe
+        files: ./publish/HPButtonRemap-${{ github.ref_name }}-lightweight.zip
         body: |
           # HP Button Remap ${{ github.ref_name }}
-          
+
           ## Requirements
-          
-          **.NET 8.0 Runtime** is required. Download from: https://dotnet.microsoft.com/download/dotnet/8.0/runtime
-          
-          Most modern Windows 10/11 systems already have this installed.
-          
+
+          - Windows 10/11
+          - .NET 8 Desktop Runtime
+
           ## Installation
-          
-          1. Download `HPButtonRemap-Installer.exe` (~66MB single file)
-          2. Run `HPButtonRemap-Installer.exe`
-          3. Click "Install"
-          
-          The installer will:
-          - Install the tray application to %LOCALAPPDATA%\HPButtonRemap (~3MB)
-          - Add a shortcut to your Startup folder (auto-start)
-          - Add a configurator to your Start Menu
-          - Start the application immediately
-          
+
+          1. Download and unzip `HPButtonRemap-<version>-lightweight.zip`
+          2. Run `HPButtonRemap.exe` once
+
           ## Uninstallation
-          
-          Right-click the tray icon and select "Uninstall..."
-          
-          Or run `HPButtonRemap-Installer.exe --uninstall`
+
+          Use tray menu -> `Uninstall...`
         generate_release_notes: true
         draft: false
         prerelease: false

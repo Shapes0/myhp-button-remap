@@ -1,183 +1,125 @@
-# Configuration Examples for HP Button Remap
+# HP Button Remap Configuration Examples
 
-This file contains various configuration examples for different action types.
+All examples assume your HP key produces:
 
-## Configuration Options
+- `EventID`: `29`
+- `EventData`: `8616`
 
-All configurations support these optional settings:
+Use your own values if they differ.
 
-- `ShowStartupNotification` (true/false) - Show a balloon notification when the tray app starts displaying the number of monitored actions. Set to `false` if you find this annoying.
-
-## Basic Configuration (Default)
-
-Launch Notepad when F11 button is pressed:
+## Launch Windows Terminal (recommended for your use case)
 
 ```json
 {
   "ShowStartupNotification": true,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
-      "Name": "F11 Key - Launch Notepad",
+      "Name": "Open Windows Terminal",
       "EventID": 29,
       "EventData": 8616,
-      "Type": "LaunchApp",
-      "LaunchPath": "notepad.exe",
-      "LaunchArguments": ""
+      "Type": "RunCommand",
+      "Command": "wt.exe",
+      "CreateNewWindow": true
     }
   ]
 }
 ```
 
-## Without Startup Notification
-
-Disable the startup notification balloon:
+## Remap to another shortcut
 
 ```json
 {
   "ShowStartupNotification": false,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
-      "Name": "F11 Key - Launch Notepad",
+      "Name": "Reopen browser tab",
+      "EventID": 29,
+      "EventData": 8616,
+      "Type": "RemapKey",
+      "RemapTo": "Ctrl+Shift+T"
+    }
+  ]
+}
+```
+
+## Send a string of text
+
+```json
+{
+  "ShowStartupNotification": false,
+  "RunAtStartup": true,
+  "ButtonActions": [
+    {
+      "Name": "Insert signature",
+      "EventID": 29,
+      "EventData": 8616,
+      "Type": "SendText",
+      "Text": "Best regards, Alex"
+    }
+  ]
+}
+```
+
+## Run a program directly
+
+```json
+{
+  "ShowStartupNotification": true,
+  "RunAtStartup": true,
+  "ButtonActions": [
+    {
+      "Name": "Launch Notepad",
       "EventID": 29,
       "EventData": 8616,
       "Type": "LaunchApp",
-      "LaunchPath": "notepad.exe",
-      "LaunchArguments": ""
+      "ProgramPath": "notepad.exe",
+      "ProgramArguments": ""
     }
   ]
 }
 ```
 
-## Launch Application with Arguments
-
-Open a specific file with Notepad:
+## Open a URL
 
 ```json
 {
   "ShowStartupNotification": true,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
-      "Name": "F11 Key - Open Notes File",
-      "EventID": 29,
-      "EventData": 8616,
-      "Type": "LaunchApp",
-      "LaunchPath": "C:\\Windows\\System32\\notepad.exe",
-      "LaunchArguments": "C:\\Users\\YourName\\Documents\\notes.txt"
-    }
-  ]
-}
-```
-
-## Open Website
-
-Open your favorite website:
-
-```json
-{
-  "ShowStartupNotification": true,
-  "ButtonActions": [
-    {
-      "Name": "F11 Key - Open Google",
+      "Name": "Open docs",
       "EventID": 29,
       "EventData": 8616,
       "Type": "OpenWebsite",
-      "WebsiteUrl": "https://www.google.com"
+      "Url": "https://learn.microsoft.com/windows/terminal/"
     }
   ]
 }
 ```
 
-## Send Keyboard Shortcut
-
-Reopen last closed browser tab (Ctrl+Shift+T):
+## Multiple actions for different HP events
 
 ```json
 {
   "ShowStartupNotification": true,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
-      "Name": "F11 Key - Reopen Tab",
+      "Name": "Terminal",
       "EventID": 29,
       "EventData": 8616,
-      "Type": "SendKeys",
-      "KeyCombo": "Ctrl+Shift+T"
-    }
-  ]
-}
-```
-
-More keyboard shortcut examples:
-
-```json
-{
-  "ShowStartupNotification": true,
-  "ButtonActions": [
-    {
-      "Name": "F11 Key - Copy",
-      "EventID": 29,
-      "EventData": 8616,
-      "Type": "SendKeys",
-      "KeyCombo": "Ctrl+C"
-    }
-  ]
-}
-```
-
-```json
-{
-  "ShowStartupNotification": true,
-  "ButtonActions": [
-    {
-      "Name": "F11 Key - Show Desktop",
-      "EventID": 29,
-      "EventData": 8616,
-      "Type": "SendKeys",
-      "KeyCombo": "Win+D"
-    }
-  ]
-}
-```
-
-```json
-{
-  "ShowStartupNotification": true,
-  "ButtonActions": [
-    {
-      "Name": "F11 Key - Task Manager",
-      "EventID": 29,
-      "EventData": 8616,
-      "Type": "SendKeys",
-      "KeyCombo": "Ctrl+Shift+Esc"
-    }
-  ]
-}
-```
-
-## Multiple Buttons (Advanced)
-
-If you have multiple special buttons on your HP laptop with different EventIDs:
-
-```json
-{
-  "ShowStartupNotification": true,
-  "ButtonActions": [
-    {
-      "Name": "F11 Button - Browser",
-      "EventID": 29,
-      "EventData": 8616,
-      "Type": "OpenWebsite",
-      "WebsiteUrl": "https://www.google.com"
+      "Type": "RunCommand",
+      "Command": "wt.exe"
     },
     {
-      "Name": "Another Button - Calculator",
+      "Name": "Browser",
       "EventID": 15,
       "EventData": 4321,
-      "Type": "LaunchApp",
-      "LaunchPath": "calc.exe",
-      "LaunchArguments": ""
+      "Type": "OpenWebsite",
+      "Url": "https://example.com"
     }
   ]
 }
 ```
-
-Note: Most HP laptops only have one special button. Use the discovery method in the README to find additional buttons if available.

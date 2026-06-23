@@ -1,39 +1,48 @@
-﻿using HPButtonRemap;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using System.Text.Json;
 
 namespace HPButtonRemap;
 
 static class Program
 {
     [STAThread]
-    static void Main()
+    static void Main(string[] args)
     {
+        if (SelfBootstrapper.TryInstallAndRelaunch(args))
+        {
+            return;
+        }
+
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Application.Run(new TrayApplicationContext());
     }
 }
 
-public class TrayApplicationContext : ApplicationContext
+public sealed class TrayApplicationContext : ApplicationContext
 {
-    private NotifyIcon _trayIcon;
+    private readonly NotifyIcon _trayIcon;
+    private readonly ActionExecutor _executor;
+    private readonly ConfigStore _configStore;
+    private readonly StartupShortcutManager _startupShortcutManager;
+    private readonly ToolStripMenuItem _runAtStartupItem;
+
     private WmiEventMonitor? _monitor;
-    private ActionExecutor _executor;
     private Config? _currentConfig;
-    private Thread? _ipcListenerThread;
-    private volatile bool _shouldExit = false;
-    private static readonly string ConfigPath = Path.Combine(
-        AppDomain.CurrentDomain.BaseDirectory,
-        "config.json"
-    );
-    private const string IPC_EVENT_NAME = "HPButtonRemap_ReloadConfig";
 
     public TrayApplicationContext()
     {
         _executor = new ActionExecutor();
-        
-        // Create tray icon
-        _trayIcon = new NotifyIcon()
+        _configStore = new ConfigStore(AppPaths.ConfigPath);
+        _startupShortcutManager = new StartupShortcutManager();
+
+        _runAtStartupItem = new ToolStripMenuItem("Run at startup")
+        {
+            CheckOnClick = true
+        };
+        _runAtStartupItem.Click += (_, _) => ToggleRunAtStartup();
+
+        _trayIcon = new NotifyIcon
         {
             Icon = SystemIcons.Application,
             ContextMenuStrip = CreateContextMenu(),
@@ -41,316 +50,228 @@ public class TrayApplicationContext : ApplicationContext
             Text = "HP Button Remap"
         };
 
-        // Load config and start monitoring
-        StartMonitoring();
-        
-        // Set up IPC listener for reload signals from configurator
-        StartIpcListener();
-    }
-    
-    private void StartIpcListener()
-    {
-        _ipcListenerThread = new Thread(() =>
-        {
-            while (!_shouldExit)
-            {
-                try
-                {
-                    using (var reloadEvent = new EventWaitHandle(false, EventResetMode.AutoReset, IPC_EVENT_NAME))
-                    {
-                        // Wait for signal with timeout so we can check _shouldExit periodically
-                        if (reloadEvent.WaitOne(1000))
-                        {
-                            // Signal received - reload configuration on UI thread
-                            if (_trayIcon.ContextMenuStrip != null && !_shouldExit)
-                            {
-                                _trayIcon.ContextMenuStrip.Invoke(new Action(() =>
-                                {
-                                    ReloadConfiguration();
-                                }));
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                    // If event creation fails, wait a bit and retry
-                    Thread.Sleep(1000);
-                }
-            }
-        })
-        {
-            IsBackground = true
-        };
-        _ipcListenerThread.Start();
+        ReloadConfiguration();
     }
 
     private ContextMenuStrip CreateContextMenu()
     {
         var menu = new ContextMenuStrip();
-        
+
         var openConfigItem = new ToolStripMenuItem("Open Configuration");
-        openConfigItem.Click += (s, e) => OpenConfiguration();
+        openConfigItem.Click += (_, _) => OpenConfiguration();
         menu.Items.Add(openConfigItem);
 
-        var openConfiguratorItem = new ToolStripMenuItem("Open Configurator");
-        openConfiguratorItem.Click += (s, e) => OpenConfigurator();
-        menu.Items.Add(openConfiguratorItem);
+        var reloadItem = new ToolStripMenuItem("Reload Configuration");
+        reloadItem.Click += (_, _) => ReloadConfiguration();
+        menu.Items.Add(reloadItem);
 
         menu.Items.Add(new ToolStripSeparator());
-
-        var reloadItem = new ToolStripMenuItem("Reload Configuration");
-        reloadItem.Click += (s, e) => ReloadConfiguration();
-        menu.Items.Add(reloadItem);
+        menu.Items.Add(_runAtStartupItem);
 
         menu.Items.Add(new ToolStripSeparator());
 
         var aboutItem = new ToolStripMenuItem("About");
-        aboutItem.Click += (s, e) => ShowAbout();
+        aboutItem.Click += (_, _) => ShowAbout();
         menu.Items.Add(aboutItem);
 
         var uninstallItem = new ToolStripMenuItem("Uninstall...");
-        uninstallItem.Click += (s, e) => ShowUninstall();
+        uninstallItem.Click += (_, _) => ShowUninstall();
         menu.Items.Add(uninstallItem);
 
         menu.Items.Add(new ToolStripSeparator());
 
         var exitItem = new ToolStripMenuItem("Exit");
-        exitItem.Click += (s, e) => Exit();
+        exitItem.Click += (_, _) => ExitApplication();
         menu.Items.Add(exitItem);
 
         return menu;
     }
 
-    private void StartMonitoring()
+    private void ReloadConfiguration()
     {
         try
         {
-            var config = LoadConfiguration();
-            _currentConfig = config;
-            
-            if (config == null || config.ButtonActions.Count == 0)
+            _monitor?.Dispose();
+
+            _currentConfig = _configStore.LoadOrCreateDefault();
+            _runAtStartupItem.Checked = _currentConfig.RunAtStartup;
+            _startupShortcutManager.SetStartupEnabled(
+                _currentConfig.RunAtStartup,
+                AppPaths.ExecutablePath,
+                AppPaths.AppDirectory
+            );
+
+            _monitor = new WmiEventMonitor(_executor);
+            _monitor.StartMonitoring(_currentConfig);
+
+            if (_currentConfig.ButtonActions.Count == 0)
             {
-                _trayIcon.ShowBalloonTip(5000, "HP Button Remap", 
-                    "No valid button actions configured. Please configure using the configurator.", 
-                    ToolTipIcon.Warning);
+                _trayIcon.ShowBalloonTip(
+                    5000,
+                    "HP Button Remap",
+                    "No button actions configured. Open config.json to add actions.",
+                    ToolTipIcon.Warning
+                );
                 return;
             }
 
-            _monitor?.Dispose();
-            _monitor = new WmiEventMonitor(_executor);
-            _monitor.StartMonitoring(config);
-
-            if (config.ShowStartupNotification)
+            if (_currentConfig.ShowStartupNotification)
             {
-                _trayIcon.ShowBalloonTip(2000, "HP Button Remap", 
-                    $"Monitoring {config.ButtonActions.Count} button action(s)", 
-                    ToolTipIcon.Info);
+                _trayIcon.ShowBalloonTip(
+                    2000,
+                    "HP Button Remap",
+                    $"Monitoring {_currentConfig.ButtonActions.Count} button action(s)",
+                    ToolTipIcon.Info
+                );
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error starting monitoring: {ex.Message}", 
-                "HP Button Remap Error", 
-                MessageBoxButtons.OK, 
-                MessageBoxIcon.Error);
+            MessageBox.Show(
+                $"Error reloading configuration: {ex.Message}",
+                "HP Button Remap Error",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
         }
     }
 
-    private Config? LoadConfiguration()
+    private void ToggleRunAtStartup()
     {
+        if (_currentConfig == null)
+        {
+            return;
+        }
+
+        bool previous = _currentConfig.RunAtStartup;
+        _currentConfig.RunAtStartup = _runAtStartupItem.Checked;
         try
         {
-            if (!File.Exists(ConfigPath))
-            {
-                CreateSampleConfig();
-                return LoadConfiguration();
-            }
-
-            var json = File.ReadAllText(ConfigPath);
-            var config = Newtonsoft.Json.JsonConvert.DeserializeObject<Config>(json);
-            return config;
+            _startupShortcutManager.SetStartupEnabled(
+                _currentConfig.RunAtStartup,
+                AppPaths.ExecutablePath,
+                AppPaths.AppDirectory
+            );
+            _configStore.Save(_currentConfig);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error loading configuration: {ex.Message}", 
-                "HP Button Remap Error", 
-                MessageBoxButtons.OK, 
-                MessageBoxIcon.Error);
-            return null;
+            MessageBox.Show(
+                $"Failed to update startup setting: {ex.Message}",
+                "HP Button Remap Error",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
+            _currentConfig.RunAtStartup = previous;
+            _runAtStartupItem.Checked = previous;
         }
     }
 
-    private void CreateSampleConfig()
-    {
-        var sampleConfig = new Config
-        {
-            ShowStartupNotification = true,
-            ButtonActions = new List<ButtonAction>
-            {
-                new ButtonAction
-                {
-                    Name = "F11 Key - Launch Notepad",
-                    EventID = 29,
-                    EventData = 8616,
-                    Type = ActionType.LaunchApp,
-                    LaunchPath = "notepad.exe",
-                    LaunchArguments = ""
-                }
-            }
-        };
-
-        var json = Newtonsoft.Json.JsonConvert.SerializeObject(sampleConfig, Newtonsoft.Json.Formatting.Indented);
-        File.WriteAllText(ConfigPath, json);
-    }
-
-    private void OpenConfiguration()
+    private static void OpenConfiguration()
     {
         try
         {
             Process.Start(new ProcessStartInfo
             {
-                FileName = ConfigPath,
+                FileName = AppPaths.ConfigPath,
                 UseShellExecute = true
             });
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error opening configuration: {ex.Message}", 
-                "HP Button Remap Error", 
-                MessageBoxButtons.OK, 
-                MessageBoxIcon.Error);
-        }
-    }
-
-    private void OpenConfigurator()
-    {
-        try
-        {
-            var configuratorPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "HPButtonRemapConfig.exe"
+            MessageBox.Show(
+                $"Unable to open configuration file: {ex.Message}",
+                "HP Button Remap Error",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
             );
-
-            if (File.Exists(configuratorPath))
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = configuratorPath,
-                    UseShellExecute = true
-                });
-            }
-            else
-            {
-                MessageBox.Show("Configurator not found. Please use 'Open Configuration' to edit manually.", 
-                    "HP Button Remap", 
-                    MessageBoxButtons.OK, 
-                    MessageBoxIcon.Warning);
-            }
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Error opening configurator: {ex.Message}", 
-                "HP Button Remap Error", 
-                MessageBoxButtons.OK, 
-                MessageBoxIcon.Error);
-        }
-    }
-
-    private void ReloadConfiguration()
-    {
-        StartMonitoring();
     }
 
     private void ShowAbout()
     {
-        string statusText = _currentConfig != null && _currentConfig.ButtonActions.Count > 0
+        string statusText = _currentConfig is { ButtonActions.Count: > 0 }
             ? $"Status: Monitoring {_currentConfig.ButtonActions.Count} button action(s)"
             : "Status: No actions configured";
 
         MessageBox.Show(
             "HP Button Remap\n\n" +
-            "Monitors HP laptop special function keys and executes configured actions.\n\n" +
+            "Actions: RemapKey, SendText, RunCommand, LaunchApp, OpenWebsite\n\n" +
             statusText + "\n\n" +
-            "Configuration: " + ConfigPath + "\n\n" +
+            "Config: " + AppPaths.ConfigPath + "\n\n" +
             "Right-click the tray icon to access options.",
             "About HP Button Remap",
             MessageBoxButtons.OK,
-            MessageBoxIcon.Information);
+            MessageBoxIcon.Information
+        );
     }
 
     private void ShowUninstall()
     {
         var result = MessageBox.Show(
-            "This will uninstall HP Button Remap from your system.\n\n" +
-            "The following will be removed:\n" +
-            "• Startup shortcut\n" +
-            "• Start Menu shortcut\n" +
-            "• Application files\n\n" +
-            "Your configuration file will be backed up to your Desktop.\n\n" +
-            "Do you want to continue?",
+            "This removes HP Button Remap and its startup shortcut.\n\n" +
+            "Your config will be backed up to the Desktop before removal.\n\n" +
+            "Continue?",
             "Uninstall HP Button Remap",
             MessageBoxButtons.YesNo,
-            MessageBoxIcon.Question);
+            MessageBoxIcon.Question
+        );
 
-        if (result == DialogResult.Yes)
+        if (result != DialogResult.Yes)
         {
-            try
-            {
-                PerformUninstall();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Error during uninstallation: {ex.Message}\n\n" +
-                    "You may need to manually remove files from:\n" +
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HPButtonRemap"),
-                    "Uninstall Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
+            return;
+        }
+
+        try
+        {
+            PerformUninstall();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Error during uninstall: {ex.Message}",
+                "Uninstall Error",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
         }
     }
 
     private void PerformUninstall()
     {
-        // Paths
-        string installDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HPButtonRemap");
-        string startupFolder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-        string shortcutPath = Path.Combine(startupFolder, "HP Button Remap.lnk");
-        string startMenuFolder = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
-        string startMenuShortcut = Path.Combine(startMenuFolder, "HP Button Remap Configurator.lnk");
+        _startupShortcutManager.SetStartupEnabled(false, AppPaths.ExecutablePath, AppPaths.AppDirectory);
 
-        // Backup config
-        string configPath = Path.Combine(installDir, "config.json");
-        if (File.Exists(configPath))
+        // Only self-delete if running from the managed install directory.
+        if (!AppPaths.IsRunningFromManagedInstallDirectory)
         {
-            string backupPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "HPButtonRemap-config-backup.json");
-            File.Copy(configPath, backupPath, true);
+            MessageBox.Show(
+                "Startup registration has been removed.\n\n" +
+                "This app is running in portable mode; delete its folder manually to finish uninstall.",
+                "Portable Mode",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information
+            );
+            ExitApplication();
+            return;
         }
 
-        // Remove startup shortcut
-        if (File.Exists(shortcutPath))
+        if (File.Exists(AppPaths.ConfigPath))
         {
-            File.Delete(shortcutPath);
+            string backupPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                "HPButtonRemap-config-backup.json"
+            );
+            File.Copy(AppPaths.ConfigPath, backupPath, true);
         }
 
-        // Remove Start Menu shortcut
-        if (File.Exists(startMenuShortcut))
-        {
-            File.Delete(startMenuShortcut);
-        }
-
-        // Create a batch file to delete the directory after the app exits
         string batchPath = Path.Combine(Path.GetTempPath(), "HPButtonRemap-uninstall.bat");
         string batchContent = $@"@echo off
 timeout /t 2 /nobreak >nul
-rd /s /q ""{installDir}""
+rd /s /q ""{AppPaths.InstallDirectory}""
 del ""{batchPath}""
 ";
         File.WriteAllText(batchPath, batchContent);
 
-        // Start the batch file
         Process.Start(new ProcessStartInfo
         {
             FileName = batchPath,
@@ -360,20 +281,17 @@ del ""{batchPath}""
         });
 
         MessageBox.Show(
-            "Uninstallation initiated successfully.\n\n" +
-            "The application will now close and complete the removal.\n\n" +
-            "Your configuration has been backed up to your Desktop.",
+            "Uninstall started. The app will now close and remove its installed files.",
             "Uninstall Complete",
             MessageBoxButtons.OK,
-            MessageBoxIcon.Information);
+            MessageBoxIcon.Information
+        );
 
-        // Exit the application
-        Application.Exit();
+        ExitApplication();
     }
 
-    private void Exit()
+    private void ExitApplication()
     {
-        _shouldExit = true;
         _monitor?.Dispose();
         _trayIcon.Visible = false;
         Application.Exit();
@@ -383,11 +301,203 @@ del ""{batchPath}""
     {
         if (disposing)
         {
-            _shouldExit = true;
             _monitor?.Dispose();
-            _trayIcon?.Dispose();
-            _ipcListenerThread?.Join(2000); // Wait up to 2 seconds for thread to exit
+            _trayIcon.Dispose();
         }
         base.Dispose(disposing);
+    }
+}
+
+public static class AppPaths
+{
+    public static readonly string InstallDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "HPButtonRemap"
+    );
+
+    public static readonly string InstalledExecutablePath = Path.Combine(InstallDirectory, "HPButtonRemap.exe");
+
+    public static string AppDirectory => Path.GetFullPath(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
+    public static string ExecutablePath => Environment.ProcessPath ?? InstalledExecutablePath;
+    public static string ConfigPath => Path.Combine(AppDirectory, "config.json");
+    public static string StartupShortcutPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.Startup),
+        "HP Button Remap.lnk"
+    );
+
+    public static bool IsRunningFromManagedInstallDirectory =>
+        string.Equals(
+            NormalizePath(AppDirectory),
+            NormalizePath(InstallDirectory),
+            StringComparison.OrdinalIgnoreCase
+        );
+
+    private static string NormalizePath(string path) =>
+        Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+}
+
+public sealed class ConfigStore
+{
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
+
+    private readonly string _configPath;
+
+    public ConfigStore(string configPath)
+    {
+        _configPath = configPath;
+    }
+
+    public Config LoadOrCreateDefault()
+    {
+        if (!File.Exists(_configPath))
+        {
+            var defaults = CreateDefaultConfig();
+            Save(defaults);
+            return defaults;
+        }
+
+        string json = File.ReadAllText(_configPath);
+        return JsonSerializer.Deserialize<Config>(json, JsonOptions) ?? CreateDefaultConfig();
+    }
+
+    public void Save(Config config)
+    {
+        string json = JsonSerializer.Serialize(config, JsonOptions);
+        File.WriteAllText(_configPath, json);
+    }
+
+    private static Config CreateDefaultConfig()
+    {
+        return new Config
+        {
+            ShowStartupNotification = true,
+            RunAtStartup = true,
+            ButtonActions = new List<ButtonAction>
+            {
+                new()
+                {
+                    Name = "F11 Key - Open Windows Terminal",
+                    EventID = 29,
+                    EventData = 8616,
+                    Type = ActionType.RunCommand,
+                    Command = "wt.exe",
+                    CreateNewWindow = true
+                }
+            }
+        };
+    }
+}
+
+public sealed class StartupShortcutManager
+{
+    public void SetStartupEnabled(bool enabled, string targetPath, string workingDirectory)
+    {
+        if (!enabled)
+        {
+            if (File.Exists(AppPaths.StartupShortcutPath))
+            {
+                File.Delete(AppPaths.StartupShortcutPath);
+            }
+            return;
+        }
+
+        var shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell")!);
+        var shortcut = shell!.GetType().InvokeMember(
+            "CreateShortcut",
+            System.Reflection.BindingFlags.InvokeMethod,
+            null,
+            shell,
+            new object[] { AppPaths.StartupShortcutPath }
+        );
+
+        shortcut!.GetType().InvokeMember(
+            "TargetPath",
+            System.Reflection.BindingFlags.SetProperty,
+            null,
+            shortcut,
+            new object[] { targetPath }
+        );
+        shortcut.GetType().InvokeMember(
+            "WorkingDirectory",
+            System.Reflection.BindingFlags.SetProperty,
+            null,
+            shortcut,
+            new object[] { workingDirectory }
+        );
+        shortcut.GetType().InvokeMember(
+            "Description",
+            System.Reflection.BindingFlags.SetProperty,
+            null,
+            shortcut,
+            new object[] { "HP Button Remap" }
+        );
+        shortcut.GetType().InvokeMember(
+            "Save",
+            System.Reflection.BindingFlags.InvokeMethod,
+            null,
+            shortcut,
+            null
+        );
+    }
+}
+
+public static class SelfBootstrapper
+{
+    public static bool TryInstallAndRelaunch(string[] args)
+    {
+#if DEBUG
+        return false;
+#else
+        if (args.Any(arg => string.Equals(arg, "--portable", StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        string currentExe = Environment.ProcessPath ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(currentExe))
+        {
+            return false;
+        }
+
+        string currentPath = Path.GetFullPath(currentExe);
+        string installedPath = Path.GetFullPath(AppPaths.InstalledExecutablePath);
+
+        if (string.Equals(currentPath, installedPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(AppPaths.InstallDirectory);
+            File.Copy(currentPath, installedPath, true);
+
+            string sourceConfig = Path.Combine(Path.GetDirectoryName(currentPath)!, "config.json");
+            string targetConfig = Path.Combine(AppPaths.InstallDirectory, "config.json");
+            if (File.Exists(sourceConfig) && !File.Exists(targetConfig))
+            {
+                File.Copy(sourceConfig, targetConfig, false);
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = installedPath,
+                UseShellExecute = true,
+                WorkingDirectory = AppPaths.InstallDirectory
+            });
+
+            return true;
+        }
+        catch
+        {
+            // If installation bootstrap fails, continue in portable mode.
+            return false;
+        }
+
+#endif
     }
 }
