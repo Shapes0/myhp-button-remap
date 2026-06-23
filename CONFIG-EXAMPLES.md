@@ -12,6 +12,7 @@ Use your own values if they differ.
 ```json
 {
   "ShowStartupNotification": true,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
       "Name": "Open Windows Terminal",
@@ -30,6 +31,7 @@ Use your own values if they differ.
 ```json
 {
   "ShowStartupNotification": false,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
       "Name": "Reopen browser tab",
@@ -47,6 +49,7 @@ Use your own values if they differ.
 ```json
 {
   "ShowStartupNotification": false,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
       "Name": "Insert signature",
@@ -64,6 +67,7 @@ Use your own values if they differ.
 ```json
 {
   "ShowStartupNotification": true,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
       "Name": "Launch Notepad",
@@ -82,6 +86,7 @@ Use your own values if they differ.
 ```json
 {
   "ShowStartupNotification": true,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
       "Name": "Open docs",
@@ -99,6 +104,7 @@ Use your own values if they differ.
 ```json
 {
   "ShowStartupNotification": true,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
       "Name": "Terminal",

@@ -37,8 +37,6 @@ jobs:
         New-Item -ItemType Directory -Path ./publish/package -Force | Out-Null
         Copy-Item ./publish/app/HPButtonRemap.exe ./publish/package/HPButtonRemap.exe -Force
         Copy-Item ./config.json ./publish/package/config.json -Force
-        Copy-Item ./Install.ps1 ./publish/package/Install.ps1 -Force
-        Copy-Item ./Uninstall.ps1 ./publish/package/Uninstall.ps1 -Force
         Copy-Item ./README.md ./publish/package/README.md -Force
         Compress-Archive -Path ./publish/package/* -DestinationPath ./publish/HPButtonRemap-${{ github.ref_name }}-lightweight.zip -Force
 
@@ -64,11 +62,11 @@ jobs:
           ## Installation
 
           1. Download and unzip `HPButtonRemap-<version>-lightweight.zip`
-          2. Run `Install.ps1`
+          2. Run `HPButtonRemap.exe` once
 
           ## Uninstallation
 
-          Run `Uninstall.ps1` (or `%LOCALAPPDATA%\HPButtonRemap\Uninstall.ps1`)
+          Use tray menu -> `Uninstall...`
         generate_release_notes: true
         draft: false
         prerelease: false

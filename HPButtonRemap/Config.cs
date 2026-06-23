@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace HPButtonRemap;
 
@@ -9,6 +10,7 @@ public class Config
 {
     public List<ButtonAction> ButtonActions { get; set; } = new();
     public bool ShowStartupNotification { get; set; } = true;
+    public bool RunAtStartup { get; set; } = true;
 }
 
 /// <summary>
@@ -20,7 +22,7 @@ public class ButtonAction
     public int EventID { get; set; }
     public int EventData { get; set; }
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonConverter(typeof(ActionTypeJsonConverter))]
     public ActionType Type { get; set; }
 
     // Legacy fields kept for backward compatibility
@@ -66,6 +68,40 @@ public enum ActionType
     SendText,
     RunCommand,
     LaunchApp,
-    OpenWebsite,
-    SendKeys
+    OpenWebsite
+}
+
+public sealed class ActionTypeJsonConverter : JsonConverter<ActionType>
+{
+    public override ActionType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.String)
+        {
+            throw new JsonException("ActionType must be a string.");
+        }
+
+        string? raw = reader.GetString();
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            throw new JsonException("ActionType cannot be empty.");
+        }
+
+        // Keep old configs working without exposing SendKeys as a first-class action.
+        if (string.Equals(raw, "SendKeys", StringComparison.OrdinalIgnoreCase))
+        {
+            return ActionType.RemapKey;
+        }
+
+        if (Enum.TryParse<ActionType>(raw, ignoreCase: true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new JsonException($"Unknown ActionType: '{raw}'.");
+    }
+
+    public override void Write(Utf8JsonWriter writer, ActionType value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.ToString());
+    }
 }

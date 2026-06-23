@@ -62,7 +62,6 @@ public class ActionExecutor
             switch (action.Type)
             {
                 case ActionType.RemapKey:
-                case ActionType.SendKeys:
                     SendKeyCombo(action.EffectiveKeyCombo);
                     break;
                 case ActionType.SendText:
@@ -129,7 +128,7 @@ public class ActionExecutor
         }
 
         string arguments = action.CreateNewWindow
-            ? $"/d /c start \"\" {action.Command}"
+            ? $"/d /c start \"\" cmd /d /c {action.Command}"
             : $"/d /c {action.Command}";
 
         var startInfo = new ProcessStartInfo

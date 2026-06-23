@@ -8,7 +8,7 @@ Tiny tray utility for HP special buttons (`hpqBEvnt`) with PowerToys-style outpu
 - run command
 - open URL
 
-This rewrite removes the heavy bundled installer flow and uses a lightweight script install/uninstall approach.
+This rewrite removes the heavy bundled installer flow and uses a single lightweight executable.
 
 ## Why this rewrite
 
@@ -27,25 +27,14 @@ This version focuses on:
 
 ## Install
 
-From a PowerShell prompt in this repo/release folder:
+1. Download and unzip the lightweight package.
+2. Run `HPButtonRemap.exe`.
 
-```powershell
-.\Install.ps1
-```
-
-What it does:
-
-- installs to `%LOCALAPPDATA%\HPButtonRemap\`
-- registers startup shortcut (`HP Button Remap.lnk`)
-- starts the tray app
+On first run, the app self-installs to `%LOCALAPPDATA%\HPButtonRemap\` and relaunches from there.
 
 ## Uninstall
 
-```powershell
-.\Uninstall.ps1
-```
-
-or run `%LOCALAPPDATA%\HPButtonRemap\Uninstall.ps1`.
+Use tray menu -> **Uninstall...**
 
 ## Configuration
 
@@ -56,6 +45,7 @@ Default example (launch a new Windows Terminal):
 ```json
 {
   "ShowStartupNotification": true,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
       "Name": "F11 Key - Open Windows Terminal",
@@ -80,8 +70,6 @@ Send a key or shortcut.
   "RemapTo": "Ctrl+Shift+T"
 }
 ```
-
-(`SendKeys` + `KeyCombo` is still supported for backward compatibility.)
 
 ### `SendText`
 Send Unicode text to the focused window.
@@ -135,6 +123,7 @@ Legacy `WebsiteUrl` still works.
 - `CreateNewWindow` (for `RunCommand`, default `true`)
 - `UseShellExecute` (for `LaunchApp`, default `true`)
 - `WaitForExit` (default `false`)
+- `RunAtStartup` (root config setting)
 
 ## Build
 

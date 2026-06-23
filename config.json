@@ -1,5 +1,6 @@
 {
   "ShowStartupNotification": true,
+  "RunAtStartup": true,
   "ButtonActions": [
     {
       "Name": "F11 Key - Open Windows Terminal",
