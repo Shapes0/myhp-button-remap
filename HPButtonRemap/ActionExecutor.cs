@@ -122,15 +122,23 @@ public class ActionExecutor
             return;
         }
 
+        if (action.CreateNewWindow && TryRunCommandDirect(action.Command, action.WorkingDirectory))
+        {
+            Debug.WriteLine($"Executed command directly: {action.Command}");
+            return;
+        }
+
         string arguments = action.CreateNewWindow
-            ? $"/d /c start \"\" cmd /d /c {action.Command}"
+            ? $"/d /c start \"\" {action.Command}"
             : $"/d /c {action.Command}";
 
         var startInfo = new ProcessStartInfo
         {
             FileName = "cmd.exe",
             Arguments = arguments,
-            UseShellExecute = false
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden
         };
 
         if (!string.IsNullOrWhiteSpace(action.WorkingDirectory))
@@ -374,7 +382,9 @@ public class ActionExecutor
         {
             FileName = "cmd.exe",
             Arguments = $"/d /c start \"\" {commandToRun}",
-            UseShellExecute = false
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden
         };
 
         if (!string.IsNullOrWhiteSpace(workingDirectory))
@@ -383,6 +393,90 @@ public class ActionExecutor
         }
 
         Process.Start(startInfo);
+    }
+
+    private static bool TryRunCommandDirect(string command, string? workingDirectory)
+    {
+        if (ContainsCmdSyntax(command))
+        {
+            return false;
+        }
+
+        if (!TrySplitCommand(command, out string fileName, out string arguments))
+        {
+            return false;
+        }
+
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                UseShellExecute = true
+            };
+
+            if (!string.IsNullOrWhiteSpace(workingDirectory))
+            {
+                startInfo.WorkingDirectory = workingDirectory;
+            }
+
+            Process.Start(startInfo);
+            return true;
+        }
+        catch (Win32Exception ex) when (ex.NativeErrorCode is 2 or 3)
+        {
+            return false;
+        }
+    }
+
+    private static bool ContainsCmdSyntax(string command)
+    {
+        foreach (char c in command)
+        {
+            if (c is '|' or '&' or '<' or '>' or '^' or '%' or '!')
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TrySplitCommand(string command, out string fileName, out string arguments)
+    {
+        fileName = string.Empty;
+        arguments = string.Empty;
+
+        string trimmed = command.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            return false;
+        }
+
+        if (trimmed.StartsWith('"'))
+        {
+            int closingQuote = trimmed.IndexOf('"', 1);
+            if (closingQuote <= 1)
+            {
+                return false;
+            }
+
+            fileName = trimmed[1..closingQuote];
+            arguments = trimmed[(closingQuote + 1)..].TrimStart();
+            return true;
+        }
+
+        int firstSpace = trimmed.IndexOf(' ');
+        if (firstSpace < 0)
+        {
+            fileName = trimmed;
+            return true;
+        }
+
+        fileName = trimmed[..firstSpace];
+        arguments = trimmed[(firstSpace + 1)..].TrimStart();
+        return true;
     }
 
     private static string BuildCommandForStart(string fileName, string arguments)
