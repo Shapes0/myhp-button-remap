@@ -2,6 +2,8 @@ name: Build and Release
 
 on:
   push:
+    branches:
+      - '**'
     tags:
       - 'v*.*.*'
   workflow_dispatch:
@@ -34,7 +36,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: HPButtonRemap-lightweight-${{ github.ref_name }}
+        name: HPButtonRemap-lightweight-${{ replace(github.ref_name, '/', '-') }}
         path: ./publish/app/HPButtonRemap.exe
 
     - name: Create Release

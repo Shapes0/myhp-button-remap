@@ -9,7 +9,8 @@ namespace HPButtonRemap;
 public class WmiEventMonitor : IDisposable
 {
     private readonly ActionExecutor _executor;
-    private readonly List<ManagementEventWatcher> _watchers = new();
+    private ManagementEventWatcher? _watcher;
+    private ButtonAction? _action;
     private bool _disposed;
 
     public WmiEventMonitor(ActionExecutor executor)
@@ -23,72 +24,71 @@ public class WmiEventMonitor : IDisposable
     public void StartMonitoring(Config config)
     {
         Debug.WriteLine("Starting HP WMI Event Monitor...");
+        StopMonitoring();
 
-        foreach (var action in config.ButtonActions)
+        if (config.Action == null)
         {
-            try
-            {
-                RegisterEventHandler(action);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to register action '{action.Name}': {ex.Message}");
-            }
+            Debug.WriteLine("No action configured.");
+            return;
         }
 
-        if (_watchers.Count == 0)
+        try
         {
-            Debug.WriteLine("No event handlers registered!");
+            RegisterEventHandler(config);
+            Debug.WriteLine($"Monitoring EventID={config.EffectiveEventID}, EventData={config.EffectiveEventData}");
         }
-        else
+        catch (Exception ex)
         {
-            Debug.WriteLine($"Monitoring {_watchers.Count} button action(s)");
+            Debug.WriteLine($"Failed to register watcher: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Register a WMI event handler for a specific button action
+    /// Register a WMI event handler for configured button event
     /// </summary>
-    private void RegisterEventHandler(ButtonAction action)
+    private void RegisterEventHandler(Config config)
     {
         // Build WQL query to filter HP button events
-        string query = $"SELECT * FROM hpqBEvnt WHERE EventID = {action.EventID}";
-        
-        if (action.EventData != 0)
+        string query = $"SELECT * FROM hpqBEvnt WHERE EventID = {config.EffectiveEventID}";
+
+        if (config.EffectiveEventData != 0)
         {
-            query += $" AND EventData = {action.EventData}";
+            query += $" AND EventData = {config.EffectiveEventData}";
         }
 
         var scope = new ManagementScope(@"root\wmi");
         var eventQuery = new WqlEventQuery(query);
-        var watcher = new ManagementEventWatcher(scope, eventQuery);
+        _watcher = new ManagementEventWatcher(scope, eventQuery);
+        _action = config.Action;
 
         // Set up event handler
-        watcher.EventArrived += (sender, e) =>
+        _watcher.EventArrived += (sender, e) =>
         {
-            OnEventArrived(action, e);
+            OnEventArrived(e);
         };
 
         // Start watching
-        watcher.Start();
-        _watchers.Add(watcher);
-
-        Debug.WriteLine($"Registered: {action.Name} (EventID: {action.EventID}, EventData: {action.EventData})");
+        _watcher.Start();
     }
 
     /// <summary>
     /// Handle WMI event arrival
     /// </summary>
-    private void OnEventArrived(ButtonAction action, EventArrivedEventArgs e)
+    private void OnEventArrived(EventArrivedEventArgs e)
     {
         try
         {
+            if (_action == null)
+            {
+                return;
+            }
+
             // Execute the configured action
-            _executor.ExecuteAction(action);
+            _executor.ExecuteAction(_action);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Event handler error for '{action.Name}': {ex.Message}");
+            Debug.WriteLine($"Event handler error: {ex.Message}");
         }
     }
 
@@ -99,20 +99,23 @@ public class WmiEventMonitor : IDisposable
     {
         Debug.WriteLine("Stopping HP WMI Event Monitor...");
 
-        foreach (var watcher in _watchers)
+        if (_watcher == null)
         {
-            try
-            {
-                watcher.Stop();
-                watcher.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to stop watcher: {ex.Message}");
-            }
+            return;
         }
 
-        _watchers.Clear();
+        try
+        {
+            _watcher.Stop();
+            _watcher.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to stop watcher: {ex.Message}");
+        }
+
+        _watcher = null;
+        _action = null;
         Debug.WriteLine("Monitoring stopped");
     }
 

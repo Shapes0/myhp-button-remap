@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 namespace HPButtonRemap;
@@ -52,26 +51,23 @@ public class ActionExecutor
     {
         try
         {
-            Debug.WriteLine($"Executing action: {action.Name} (Type: {action.Type})");
+            Debug.WriteLine($"Executing action type: {action.Type}");
 
-            if (action.DelayMs > 0)
+            if (action.EffectiveDelayMs > 0)
             {
-                Thread.Sleep(action.DelayMs);
+                Thread.Sleep(action.EffectiveDelayMs);
             }
 
             switch (action.Type)
             {
                 case ActionType.RemapKey:
-                    SendKeyCombo(action.EffectiveKeyCombo);
+                    SendKeyCombo(action.RemapKey);
                     break;
                 case ActionType.SendText:
-                    SendText(action.Text);
+                    SendText(action.SendText);
                     break;
                 case ActionType.RunCommand:
                     RunCommand(action);
-                    break;
-                case ActionType.LaunchApp:
-                    LaunchApplication(action);
                     break;
                 case ActionType.OpenWebsite:
                     OpenWebsite(action);
@@ -83,34 +79,7 @@ public class ActionExecutor
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to execute action '{action.Name}': {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Launch an application with optional arguments
-    /// </summary>
-    private void LaunchApplication(ButtonAction action)
-    {
-        if (string.IsNullOrWhiteSpace(action.EffectiveProgramPath))
-        {
-            Debug.WriteLine("Program path is not specified");
-            return;
-        }
-
-        var fileName = action.EffectiveProgramPath!;
-        var arguments = action.EffectiveProgramArguments ?? string.Empty;
-
-        try
-        {
-            StartProcess(fileName, arguments, action);
-            return;
-        }
-        catch (Win32Exception ex) when (ex.NativeErrorCode == 2 || ex.NativeErrorCode == 3)
-        {
-            // Generic fallback for PATH/AppAlias resolution edge-cases.
-            LaunchViaCmdStart(fileName, arguments, action.WorkingDirectory);
-            Debug.WriteLine($"Launched via cmd start fallback: {fileName} {arguments}");
+            Debug.WriteLine($"Failed to execute action: {ex.Message}");
         }
     }
 
@@ -122,13 +91,13 @@ public class ActionExecutor
             return;
         }
 
-        if (action.CreateNewWindow && TryRunCommandDirect(action.Command, action.WorkingDirectory))
+        if (action.EffectiveCreateNewWindow && TryRunCommandDirect(action.Command, action.WorkingDirectory))
         {
             Debug.WriteLine($"Executed command directly: {action.Command}");
             return;
         }
 
-        string arguments = action.CreateNewWindow
+        string arguments = action.EffectiveCreateNewWindow
             ? $"/d /c start \"\" {action.Command}"
             : $"/d /c {action.Command}";
 
@@ -155,7 +124,7 @@ public class ActionExecutor
     /// </summary>
     private void OpenWebsite(ButtonAction action)
     {
-        if (string.IsNullOrWhiteSpace(action.EffectiveUrl))
+        if (string.IsNullOrWhiteSpace(action.OpenWebsite))
         {
             Debug.WriteLine("URL is not specified");
             return;
@@ -163,12 +132,12 @@ public class ActionExecutor
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = action.EffectiveUrl,
+            FileName = action.OpenWebsite,
             UseShellExecute = true
         };
 
         Process.Start(startInfo);
-        Debug.WriteLine($"Opened URL: {action.EffectiveUrl}");
+        Debug.WriteLine($"Opened URL: {action.OpenWebsite}");
     }
 
     /// <summary>
@@ -354,47 +323,6 @@ public class ActionExecutor
         }
     }
 
-    private static void StartProcess(string fileName, string arguments, ButtonAction action)
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = fileName,
-            Arguments = arguments,
-            UseShellExecute = action.UseShellExecute
-        };
-
-        if (!string.IsNullOrWhiteSpace(action.WorkingDirectory))
-        {
-            startInfo.WorkingDirectory = action.WorkingDirectory;
-        }
-
-        var process = Process.Start(startInfo);
-        if (process != null && action.WaitForExit)
-        {
-            process.WaitForExit();
-        }
-    }
-
-    private static void LaunchViaCmdStart(string fileName, string arguments, string? workingDirectory)
-    {
-        string commandToRun = BuildCommandForStart(fileName, arguments);
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "cmd.exe",
-            Arguments = $"/d /c start \"\" {commandToRun}",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WindowStyle = ProcessWindowStyle.Hidden
-        };
-
-        if (!string.IsNullOrWhiteSpace(workingDirectory))
-        {
-            startInfo.WorkingDirectory = workingDirectory;
-        }
-
-        Process.Start(startInfo);
-    }
-
     private static bool TryRunCommandDirect(string command, string? workingDirectory)
     {
         if (ContainsCmdSyntax(command))
@@ -424,7 +352,7 @@ public class ActionExecutor
             Process.Start(startInfo);
             return true;
         }
-        catch (Win32Exception ex) when (ex.NativeErrorCode is 2 or 3)
+        catch (Win32Exception)
         {
             return false;
         }
@@ -479,31 +407,4 @@ public class ActionExecutor
         return true;
     }
 
-    private static string BuildCommandForStart(string fileName, string arguments)
-    {
-        var builder = new StringBuilder();
-        builder.Append(QuoteIfNeeded(fileName));
-        if (!string.IsNullOrWhiteSpace(arguments))
-        {
-            builder.Append(' ');
-            builder.Append(arguments);
-        }
-
-        return builder.ToString();
-    }
-
-    private static string QuoteIfNeeded(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return "\"\"";
-        }
-
-        if (value.Contains(' ') && !(value.StartsWith('"') && value.EndsWith('"')))
-        {
-            return $"\"{value}\"";
-        }
-
-        return value;
-    }
 }
