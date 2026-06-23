@@ -129,7 +129,7 @@ public class ActionExecutor
         }
 
         string arguments = action.CreateNewWindow
-            ? $"/d /c start \"\" {action.Command}"
+            ? $"/d /c start \"\" cmd /d /c {action.Command}"
             : $"/d /c {action.Command}";
 
         var startInfo = new ProcessStartInfo
@@ -424,7 +424,11 @@ public class ActionExecutor
             Process.Start(startInfo);
             return true;
         }
-        catch (Win32Exception ex) when (ex.NativeErrorCode is 2 or 3)
+        catch (Win32Exception)
+        {
+            return false;
+        }
+        catch
         {
             return false;
         }
