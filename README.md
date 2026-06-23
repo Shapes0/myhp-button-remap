@@ -4,8 +4,6 @@ Lightweight tray application for remapping HP laptop special function keys (MyHP
 
 ## Features
 
-- remap to key/shortcut
-- send text
 - run program
 - run command
 - open URL
@@ -36,7 +34,7 @@ Edit `%LOCALAPPDATA%\HPButtonRemap\config.json` and click tray menu -> **Reload 
 - `EventID` and `EventData` are root-level
 - one `Action` object (not an array)
 
-Built-in default `config.json` is focused on `RunCommand`:
+Built-in default `config.json`:
 
 ```json
 {
@@ -72,39 +70,7 @@ Built-in default `config.json` is focused on `RunCommand`:
 }
 ```
 
-### 2) RemapKey
-
-```json
-{
-  "ShowStartupNotification": false,
-  "RunAtStartup": true,
-  "EventID": 29,
-  "EventData": 8616,
-  "Action": {
-    "Type": "RemapKey",
-    "RemapKey": "Ctrl+Shift+T",
-    "DelayMs": 0
-  }
-}
-```
-
-### 3) SendText
-
-```json
-{
-  "ShowStartupNotification": false,
-  "RunAtStartup": true,
-  "EventID": 29,
-  "EventData": 8616,
-  "Action": {
-    "Type": "SendText",
-    "SendText": "Best regards, Alex",
-    "DelayMs": 0
-  }
-}
-```
-
-### 4) OpenWebsite
+### 2) OpenWebsite
 
 ```json
 {

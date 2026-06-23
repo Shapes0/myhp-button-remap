@@ -21,36 +21,6 @@ All examples use the single-button config shape:
 }
 ```
 
-## RemapKey
-
-```json
-{
-  "ShowStartupNotification": false,
-  "RunAtStartup": true,
-  "EventID": 29,
-  "EventData": 8616,
-  "Action": {
-    "Type": "RemapKey",
-    "RemapKey": "Ctrl+Shift+T"
-  }
-}
-```
-
-## SendText
-
-```json
-{
-  "ShowStartupNotification": false,
-  "RunAtStartup": true,
-  "EventID": 29,
-  "EventData": 8616,
-  "Action": {
-    "Type": "SendText",
-    "SendText": "Best regards, Alex"
-  }
-}
-```
-
 ## OpenWebsite
 
 ```json

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace HPButtonRemap;
@@ -42,9 +42,17 @@ public sealed class TrayApplicationContext : ApplicationContext
         };
         _runAtStartupItem.Click += (_, _) => ToggleRunAtStartup();
 
+        private static Icon LoadTrayIcon()
+        {
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            // Matches: <RootNamespace>.<filename>  e.g. HPButtonRemap.tray.ico
+            using var stream = assembly.GetManifestResourceStream("HPButtonRemap.tray.ico");
+            return stream is not null ? new Icon(stream) : SystemIcons.Application;
+        }
+
         _trayIcon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = LoadTrayIcon(),
             ContextMenuStrip = CreateContextMenu(),
             Visible = true,
             Text = "HP Button Remap"
@@ -196,7 +204,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         MessageBox.Show(
             "HP Button Remap\n\n" +
-            "Actions: RemapKey, SendText, RunCommand, OpenWebsite\n\n" +
+            "Actions: RunCommand, OpenWebsite\n\n" +
             statusText + "\n\n" +
             "Config: " + AppPaths.ConfigPath + "\n\n" +
             "Right-click the tray icon to access options.",
@@ -370,17 +378,14 @@ public sealed class ConfigStore
         File.WriteAllText(_configPath, json);
     }
 
-    private static Config CreateDefaultConfig()
+    private static Config CreateDefaultConfig() => new()
     {
-        return new Config
-        {
-            ShowStartupNotification = true,
-            RunAtStartup = true,
-            EventID = 29,
-            EventData = 8616,
-            Action = ButtonAction.CreateDefault()
-        };
-    }
+        ShowStartupNotification = true,
+        RunAtStartup = true,
+        EventID = 29,
+        EventData = 8616,
+        Action = ButtonAction.CreateDefault()
+    };
 }
 
 public sealed class StartupShortcutManager

@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Management" Version="10.0.1" />
+    <EmbeddedResource Include="tray.ico" />
   </ItemGroup>
 
 </Project>

@@ -32,8 +32,6 @@ public class ButtonAction
     public bool? CreateNewWindow { get; set; } = true;
     public string? WorkingDirectory { get; set; }
     public int? DelayMs { get; set; } = 0;
-    public string? RemapKey { get; set; }
-    public string? SendText { get; set; }
     public string? OpenWebsite { get; set; }
 
     [JsonIgnore]
@@ -42,15 +40,12 @@ public class ButtonAction
     [JsonIgnore]
     public int EffectiveDelayMs => DelayMs ?? 0;
 
-    public static ButtonAction CreateDefault()
+    public static ButtonAction CreateDefault() => new()
     {
-        return new ButtonAction
-        {
-            Type = ActionType.RunCommand,
-            Command = "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
-            CreateNewWindow = true
-        };
-    }
+        Type = ActionType.RunCommand,
+        Command = "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
+        CreateNewWindow = true
+    };
 }
 
 /// <summary>
@@ -58,8 +53,6 @@ public class ButtonAction
 /// </summary>
 public enum ActionType
 {
-    RemapKey,
-    SendText,
     RunCommand,
     OpenWebsite
 }
