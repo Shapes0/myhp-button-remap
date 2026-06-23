@@ -29,6 +29,14 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private WmiEventMonitor? _monitor;
     private Config? _currentConfig;
+    
+    private static Icon LoadTrayIcon()
+    {
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        // Matches: <RootNamespace>.<filename>  e.g. HPButtonRemap.tray.ico
+        using var stream = assembly.GetManifestResourceStream("HPButtonRemap.tray.ico");
+        return stream is not null ? new Icon(stream) : SystemIcons.Application;
+    }
 
     public TrayApplicationContext()
     {
@@ -41,14 +49,6 @@ public sealed class TrayApplicationContext : ApplicationContext
             CheckOnClick = true
         };
         _runAtStartupItem.Click += (_, _) => ToggleRunAtStartup();
-
-        private static Icon LoadTrayIcon()
-        {
-            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            // Matches: <RootNamespace>.<filename>  e.g. HPButtonRemap.tray.ico
-            using var stream = assembly.GetManifestResourceStream("HPButtonRemap.tray.ico");
-            return stream is not null ? new Icon(stream) : SystemIcons.Application;
-        }
 
         _trayIcon = new NotifyIcon
         {
