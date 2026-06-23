@@ -1,6 +1,14 @@
 # HP Button Remap
 
-Tray app for remapping HP special function button events from `hpqBEvnt`.
+Lightweight tray application for remapping HP laptop special function keys (MyHP/HP System Event Utility/HP Programmable Key). Tested on an HP OmniBook, YMMV on other models. This is a vibe coded app, use at your own risk.
+
+## Features
+
+- remap to key/shortcut
+- send text
+- run program
+- run command
+- open URL
 
 ## Requirements
 
