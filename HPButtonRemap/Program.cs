@@ -384,7 +384,7 @@ public sealed class ConfigStore
                     EventID = 29,
                     EventData = 8616,
                     Type = ActionType.RunCommand,
-                    Command = "wt.exe",
+                    Command = "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
                     CreateNewWindow = true
                 }
             }

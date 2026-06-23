@@ -43,7 +43,7 @@ Default example (launch a command in a new window):
       "EventID": 29,
       "EventData": 8616,
       "Type": "RunCommand",
-      "Command": "wt.exe",
+      "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
       "CreateNewWindow": true
     }
   ]
@@ -91,7 +91,7 @@ Run a command through `cmd.exe`. Useful for aliases/shell commands.
 ```json
 {
   "Type": "RunCommand",
-  "Command": "wt.exe"
+  "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe"
 }
 ```
 

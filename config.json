@@ -7,7 +7,7 @@
       "EventID": 29,
       "EventData": 8616,
       "Type": "RunCommand",
-      "Command": "wt.exe",
+      "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
       "CreateNewWindow": true
     }
   ]

@@ -19,7 +19,7 @@ Use your own values if they differ.
       "EventID": 29,
       "EventData": 8616,
       "Type": "RunCommand",
-      "Command": "wt.exe",
+      "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
       "CreateNewWindow": true
     }
   ]
@@ -111,7 +111,7 @@ Use your own values if they differ.
       "EventID": 29,
       "EventData": 8616,
       "Type": "RunCommand",
-      "Command": "wt.exe"
+      "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe"
     },
     {
       "Name": "Browser",
