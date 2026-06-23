@@ -1,11 +1,9 @@
-# HP Button Remap (Lightweight Rewrite)
+# HP Button Remap
 
 Lightweight tray application for remapping HP laptop special function keys (MyHP/HP System Event Utility/HP Programmable Key). Tested on an HP OmniBook, YMMV on other models. This is a vibe coded app, use at your own risk.
 
 ## Features
 
-- remap to key/shortcut
-- send text
 - run program
 - run command
 - open URL
@@ -13,117 +11,90 @@ Lightweight tray application for remapping HP laptop special function keys (MyHP
 ## Requirements
 
 - Windows 10/11
-- HP laptop exposing WMI events in `root\wmi` (`hpqBEvnt`)
-- .NET 8 Desktop Runtime installed
+- HP device exposing `root\wmi` `hpqBEvnt` events
+- .NET 8 Desktop Runtime
 
 ## Install
 
-1. Download `HPButtonRemap.exe`.
-2. Run `HPButtonRemap.exe`.
+1. Download `HPButtonRemap.exe`
+2. Run it once
 
-On first run, the app self-installs to `%LOCALAPPDATA%\HPButtonRemap\` and relaunches from there.
+It self-installs to `%LOCALAPPDATA%\HPButtonRemap\`.
 
 ## Uninstall
 
-Use tray menu -> **Uninstall...**
+Tray icon -> **Uninstall...**
 
 ## Configuration
 
-Edit `%LOCALAPPDATA%\HPButtonRemap\config.json` (or use tray menu -> **Open Configuration**) and then **Reload Configuration**.
+Edit `%LOCALAPPDATA%\HPButtonRemap\config.json` and click tray menu -> **Reload Configuration**.
 
-Default example (launch a command in a new window):
+### Config shape
+
+- `EventID` and `EventData` are root-level
+- one `Action` object (not an array)
+
+Built-in default `config.json`:
 
 ```json
 {
   "ShowStartupNotification": true,
   "RunAtStartup": true,
-  "ButtonActions": [
-    {
-      "Name": "F11 Key - Run a command",
-      "EventID": 29,
-      "EventData": 8616,
-      "Type": "RunCommand",
-      "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
-      "CreateNewWindow": true
-    }
-  ]
+  "EventID": 29,
+  "EventData": 8616,
+  "Action": {
+    "Type": "RunCommand",
+    "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
+    "CreateNewWindow": true
+  }
 }
 ```
 
-## Action types
+## Full example configs
 
-### `RemapKey`
-Send a key or shortcut.
+### 1) RunCommand
 
 ```json
 {
-  "Type": "RemapKey",
-  "RemapTo": "Ctrl+Shift+T"
+  "ShowStartupNotification": true,
+  "RunAtStartup": true,
+  "EventID": 29,
+  "EventData": 8616,
+  "Action": {
+    "Type": "RunCommand",
+    "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
+    "CreateNewWindow": true,
+    "WorkingDirectory": "%userprofile%",
+    "DelayMs": 0
+  }
 }
 ```
 
-### `SendText`
-Send Unicode text to the focused window.
+### 2) OpenWebsite
 
 ```json
 {
-  "Type": "SendText",
-  "Text": "hello from my HP key"
+  "ShowStartupNotification": true,
+  "RunAtStartup": true,
+  "EventID": 29,
+  "EventData": 8616,
+  "Action": {
+    "Type": "OpenWebsite",
+    "OpenWebsite": "https://learn.microsoft.com/windows/terminal/",
+    "DelayMs": 0
+  }
 }
 ```
 
-### `LaunchApp`
-Run an executable with optional arguments.
-
-```json
-{
-  "Type": "LaunchApp",
-  "ProgramPath": "notepad.exe",
-  "ProgramArguments": ""
-}
-```
-
-Legacy `LaunchPath`/`LaunchArguments` still works.
-
-### `RunCommand`
-Run a command through `cmd.exe`. Useful for aliases/shell commands.
-
-```json
-{
-  "Type": "RunCommand",
-  "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe"
-}
-```
-
-### `OpenWebsite`
-Open URL in default browser.
-
-```json
-{
-  "Type": "OpenWebsite",
-  "Url": "https://example.com"
-}
-```
-
-Legacy `WebsiteUrl` still works.
-
-## Advanced per-action options
-
-- `DelayMs` (default `0`)
-- `WorkingDirectory`
-- `CreateNewWindow` (for `RunCommand`, default `true`)
-- `UseShellExecute` (for `LaunchApp`, default `true`)
-- `WaitForExit` (default `false`)
-- `RunAtStartup` (root config setting)
-
-## Build
+## Build locally
 
 ```powershell
 dotnet publish .\HPButtonRemap\HPButtonRemap.csproj `
   --configuration Release `
   --runtime win-x64 `
   --self-contained false `
-  -p:PublishSingleFile=true
+  -p:PublishSingleFile=true `
+  --output .\publish\app
 ```
 
 ## License

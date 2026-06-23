@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace HPButtonRemap;
@@ -29,6 +29,14 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private WmiEventMonitor? _monitor;
     private Config? _currentConfig;
+    
+    private static Icon LoadTrayIcon()
+    {
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        // Matches: <RootNamespace>.<filename>  e.g. HPButtonRemap.tray.ico
+        using var stream = assembly.GetManifestResourceStream("HPButtonRemap.tray.ico");
+        return stream is not null ? new Icon(stream) : SystemIcons.Application;
+    }
 
     public TrayApplicationContext()
     {
@@ -44,7 +52,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         _trayIcon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = LoadTrayIcon(),
             ContextMenuStrip = CreateContextMenu(),
             Visible = true,
             Text = "HP Button Remap"
@@ -104,12 +112,12 @@ public sealed class TrayApplicationContext : ApplicationContext
             _monitor = new WmiEventMonitor(_executor);
             _monitor.StartMonitoring(_currentConfig);
 
-            if (_currentConfig.ButtonActions.Count == 0)
+            if (_currentConfig.Action == null)
             {
                 _trayIcon.ShowBalloonTip(
                     5000,
                     "HP Button Remap",
-                    "No button actions configured. Open config.json to add actions.",
+                    "No action configured. Open config.json to add an Action object.",
                     ToolTipIcon.Warning
                 );
                 return;
@@ -120,7 +128,7 @@ public sealed class TrayApplicationContext : ApplicationContext
                 _trayIcon.ShowBalloonTip(
                     2000,
                     "HP Button Remap",
-                    $"Monitoring {_currentConfig.ButtonActions.Count} button action(s)",
+                    $"Monitoring EventID={_currentConfig.EffectiveEventID}, EventData={_currentConfig.EffectiveEventData}",
                     ToolTipIcon.Info
                 );
             }
@@ -190,13 +198,13 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private void ShowAbout()
     {
-        string statusText = _currentConfig is { ButtonActions.Count: > 0 }
-            ? $"Status: Monitoring {_currentConfig.ButtonActions.Count} button action(s)"
+        string statusText = _currentConfig is { Action: not null }
+            ? $"Status: Monitoring EventID={_currentConfig.EffectiveEventID}, EventData={_currentConfig.EffectiveEventData} ({_currentConfig.Action.Type})"
             : "Status: No actions configured";
 
         MessageBox.Show(
             "HP Button Remap\n\n" +
-            "Actions: RemapKey, SendText, RunCommand, LaunchApp, OpenWebsite\n\n" +
+            "Actions: RunCommand, OpenWebsite\n\n" +
             statusText + "\n\n" +
             "Config: " + AppPaths.ConfigPath + "\n\n" +
             "Right-click the tray icon to access options.",
@@ -370,26 +378,14 @@ public sealed class ConfigStore
         File.WriteAllText(_configPath, json);
     }
 
-    private static Config CreateDefaultConfig()
+    private static Config CreateDefaultConfig() => new()
     {
-        return new Config
-        {
-            ShowStartupNotification = true,
-            RunAtStartup = true,
-            ButtonActions = new List<ButtonAction>
-            {
-                new()
-                {
-                    Name = "F11 Key - Open Windows Terminal",
-                    EventID = 29,
-                    EventData = 8616,
-                    Type = ActionType.RunCommand,
-                    Command = "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
-                    CreateNewWindow = true
-                }
-            }
-        };
-    }
+        ShowStartupNotification = true,
+        RunAtStartup = true,
+        EventID = 29,
+        EventData = 8616,
+        Action = ButtonAction.CreateDefault()
+    };
 }
 
 public sealed class StartupShortcutManager

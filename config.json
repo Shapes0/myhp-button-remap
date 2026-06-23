@@ -1,14 +1,11 @@
 {
   "ShowStartupNotification": true,
   "RunAtStartup": true,
-  "ButtonActions": [
-    {
-      "Name": "F11 Key - Open Windows Terminal",
-      "EventID": 29,
-      "EventData": 8616,
-      "Type": "RunCommand",
-      "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
-      "CreateNewWindow": true
-    }
-  ]
+  "EventID": 29,
+  "EventData": 8616,
+  "Action": {
+    "Type": "RunCommand",
+    "Command": "%localappdata%\\Microsoft\\WindowsApps\\wt.exe",
+    "CreateNewWindow": true
+  }
 }
