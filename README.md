@@ -1,23 +1,14 @@
 # HP Button Remap (Lightweight Rewrite)
 
-Tiny tray utility for HP special buttons (`hpqBEvnt`) with PowerToys-style output actions:
+Lightweight tray application for remapping HP laptop special function keys (MyHP/HP System Event Utility/HP Programmable Key). Tested on an HP OmniBook, YMMV on other models. This is a vibe coded app, use at your own risk.
+
+## Features
 
 - remap to key/shortcut
 - send text
 - run program
 - run command
 - open URL
-
-This rewrite removes the heavy bundled installer flow and uses a single lightweight executable.
-
-## Why this rewrite
-
-The old packaging path produced large installers and inconsistent launch behavior for some commands (notably `wt.exe` in certain environments).  
-This version focuses on:
-
-- small framework-dependent single-file app distribution
-- robust command/program launching with fallback handling
-- JSON-first config with no mandatory GUI config tool
 
 ## Requirements
 
