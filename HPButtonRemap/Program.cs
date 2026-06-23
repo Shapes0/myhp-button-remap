@@ -50,7 +50,7 @@ public class TrayApplicationContext : ApplicationContext
         // Load config and start monitoring
         StartMonitoring();
         
-        // Set up IPC listener for reload signals from configurator
+        // Set up IPC listener for external reload signals
         StartIpcListener();
     }
     
@@ -134,7 +134,7 @@ public class TrayApplicationContext : ApplicationContext
             if (config == null || config.ButtonActions.Count == 0)
             {
                 _trayIcon.ShowBalloonTip(5000, "HP Button Remap", 
-                    "No valid button actions configured. Please configure using the configurator.", 
+                    "No valid button actions configured. Edit config.json to add actions.", 
                     ToolTipIcon.Warning);
                 return;
             }

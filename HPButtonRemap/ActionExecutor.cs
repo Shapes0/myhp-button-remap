@@ -110,7 +110,7 @@ public class ActionExecutor
         catch (Win32Exception ex) when (ex.NativeErrorCode == 2 || ex.NativeErrorCode == 3)
         {
             // This fallback catches PATH/AppAlias edge-cases (for example wt.exe).
-            if (TryLaunchWindowsTerminal(arguments, action.WorkingDirectory))
+            if (IsWindowsTerminalAlias(fileName) && TryLaunchWindowsTerminal(arguments, action.WorkingDirectory))
             {
                 return;
             }
@@ -428,6 +428,12 @@ public class ActionExecutor
         {
             return false;
         }
+    }
+
+    private static bool IsWindowsTerminalAlias(string fileName)
+    {
+        string normalized = Path.GetFileName(fileName).ToLowerInvariant();
+        return normalized is "wt" or "wt.exe";
     }
 
     private static string BuildCommandForStart(string fileName, string arguments)
