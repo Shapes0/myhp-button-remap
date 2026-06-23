@@ -126,6 +126,8 @@ dotnet publish .\HPButtonRemap\HPButtonRemap.csproj `
   -p:PublishSingleFile=true
 ```
 
+`wt.exe` is only an example command above; the utility does not have Windows Terminal-specific behavior.
+
 ## License
 
 MIT (see `LICENSE`)
